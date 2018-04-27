@@ -19,7 +19,17 @@ func InstaLogin() {
 	}
 
 }
-
+func ListAllFollowing() map[int]string {
+	users, err := Insta.UserFollowing(Insta.InstaType.LoggedInUser.ID, "")
+	var response = make(map[int]string)
+	if err != nil {
+		return nil
+	}
+	for i, user := range users.Users {
+		response[i] = user.Username
+	}
+	return response
+}
 func InstaShowComments(userIDToSpy string) {
 	r, err := Insta.GetUserByUsername(userIDToSpy)
 	if err != nil {
@@ -37,7 +47,7 @@ func InstaShowComments(userIDToSpy string) {
 			gender := api.GetGender(fullname[0])
 			if gender == "female" {
 				fmt.Printf("Name:%s |User:%s |Comment:%s \n", comment.User.FullName, comment.User.Username, comment.Text)
-
+				_, err = Insta.Follow(comment.User.ID)
 			}
 
 		}
