@@ -30,6 +30,13 @@ func ListAllFollowing() map[int]string {
 	}
 	return response
 }
+func InstaDirectMessage() {
+	resp, err := Insta.DirectMessage("some_girl", "hello")
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(resp)
+}
 func InstaShowComments(userIDToSpy string) {
 	r, err := Insta.GetUserByUsername(userIDToSpy)
 	if err != nil {
