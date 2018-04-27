@@ -46,7 +46,7 @@ func InstaShowComments(userIDToSpy string) {
 			fullname := strings.Split(comment.User.FullName, " ")
 			gender := api.GetGender(fullname[0])
 			if gender == "female" {
-				fmt.Printf("Name:%s |User:%s |Comment:%s \n", comment.User.FullName, comment.User.Username, comment.Text)
+				fmt.Printf(">> Following-> Name:%s \t|User:%s \t|Comment:%s \n", comment.User.FullName, comment.User.Username, comment.Text)
 				_, err = Insta.Follow(comment.User.ID)
 			}
 

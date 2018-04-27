@@ -7,7 +7,6 @@ import "fmt"
 type Configuration struct {
 	InstaUser string
 	InstaPass string
-	UserToSpy string
 }
 
 var Localconfig *Configuration

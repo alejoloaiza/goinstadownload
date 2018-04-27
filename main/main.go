@@ -5,6 +5,7 @@ import (
 	"goinstadownload/config"
 	"goinstadownload/instagram"
 	"os"
+	"time"
 )
 
 func main() {
@@ -16,8 +17,9 @@ func main() {
 	instagram.InstaLogin()
 	r := instagram.ListAllFollowing()
 	for _, user := range r {
-		fmt.Println(user)
+		fmt.Printf("Checking user: %s ", user)
+		time.Sleep(5 * time.Minute)
+		instagram.InstaShowComments(user)
 	}
-	//instagram.InstaShowComments(config.Localconfig.UserToSpy)
 	defer instagram.InstaLogout()
 }
