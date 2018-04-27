@@ -24,23 +24,17 @@ func GetGender(name string) string {
 		log.Fatal("NewRequest: ", err)
 		return ""
 	}
-
 	client := &http.Client{}
-
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Fatal("Do: ", err)
 		return ""
 	}
-
 	defer resp.Body.Close()
-
 	var record Name
 
 	if err := json.NewDecoder(resp.Body).Decode(&record); err != nil {
 		log.Println(err)
 	}
-
-	//fmt.Printf(">> Name = %s  Gender = %s \n", record.Name, record.Gender)
 	return record.Gender
 }
