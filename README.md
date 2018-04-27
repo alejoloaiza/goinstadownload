@@ -22,7 +22,8 @@ go get -v -u github.com/ahmdrz/goinsta
 ```
 { 
 	"InstaUser":"your_instagram_user",
-	"InstaPass":"your_instagram_pwd"
+	"InstaPass":"your_instagram_pwd",
+	"Blacklist":["names_to_exclude"]
 }
 ```
 5. Build and run passing the correct parameters
