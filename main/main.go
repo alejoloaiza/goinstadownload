@@ -5,20 +5,26 @@ import (
 	"goinstadownload/config"
 	"goinstadownload/instagram"
 	"os"
+	"strconv"
 	"time"
 )
 
 func main() {
-	arg := "../config/config.json"
-	if len(os.Args) > 1 {
-		arg = os.Args[1]
+	var arg1 string
+	var sleeptime int
+	if len(os.Args) > 2 {
+		arg1 = os.Args[1]
+		sleeptime, _ = strconv.Atoi(os.Args[2])
+	} else {
+		fmt.Println("Error: Usage command <configpath> <wait time in minutes>")
 	}
-	_ = config.GetConfig(arg)
+
+	_ = config.GetConfig(arg1)
 	instagram.InstaLogin()
 	r := instagram.ListAllFollowing()
 	for _, user := range r {
-		fmt.Printf("Checking user: %s ", user)
-		time.Sleep(5 * time.Minute)
+		fmt.Printf("Checking user: %s \n", user)
+		time.Sleep(time.Minute * time.Duration(sleeptime))
 		instagram.InstaShowComments(user)
 	}
 	defer instagram.InstaLogout()
