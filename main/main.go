@@ -20,12 +20,18 @@ func main() {
 	}
 
 	_ = config.GetConfig(arg1)
-	instagram.InstaLogin()
-	r := instagram.ListAllFollowing()
-	for _, user := range r {
-		fmt.Printf("Checking user: %s \n", user)
-		time.Sleep(time.Minute * time.Duration(sleeptime))
-		instagram.InstaShowComments(user)
+	instagram.UploadBlacklist()
+	for {
+		instagram.InstaLogin()
+		r := instagram.ListAllFollowing()
+		for _, user := range r {
+			fmt.Printf("Checking user: %s \n", user)
+			instagram.InstaShowComments(user)
+			time.Sleep(time.Minute * time.Duration(sleeptime))
+
+		}
+		instagram.InstaLogout()
+		fmt.Printf("============== WAITING FOR NEXT CYCLE ===============")
+		time.Sleep(time.Minute * 360)
 	}
-	defer instagram.InstaLogout()
 }

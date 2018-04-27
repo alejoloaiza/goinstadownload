@@ -7,6 +7,7 @@ import "fmt"
 type Configuration struct {
 	InstaUser string
 	InstaPass string
+	Blacklist []string
 }
 
 var Localconfig *Configuration
