@@ -22,12 +22,12 @@ go get -v -u github.com/ahmdrz/goinsta
 ```
 { 
 	"InstaUser":"your_instagram_user",
-    "InstaPass":"your_instagram_pwd"
+	"InstaPass":"your_instagram_pwd"
 }
 ```
 5. Build and run passing the correct parameters
 ```
 ./main <Path of your config File> <Time between users> 
-Path of your config File: This is the path to the config file, where user and pwd are stored.
-Time between users: To check each user we should wait some time, this is because we will overload the Instagram Api and maybe we will be disconnected.
+> Path of your config File: This is the path to the config file, where user and pwd are stored.
+> Time between users: To check each user we should wait some time, this is because we will overload the Instagram Api and maybe we will be disconnected.
 ```
