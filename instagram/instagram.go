@@ -2,16 +2,18 @@ package instagram
 
 import (
 	"fmt"
-	"goinstadownload/api"
 	"goinstadownload/config"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/ahmdrz/goinsta"
 )
 
 var Insta *goinsta.Instagram
-var Blacklist = make(map[string]int)
+var BlacklistNames = make(map[string]int)
+var BlacklistUsers = make(map[string]int)
+var FemalelistNames = make(map[string]int)
 
 func InstaLogin() {
 	Insta = goinsta.New(config.Localconfig.InstaUser, config.Localconfig.InstaPass)
@@ -31,10 +33,18 @@ func ListAllFollowing() map[int]string {
 	}
 	return response
 }
-func UploadBlacklist() {
-	blacklistraw := config.Localconfig.Blacklist
+func Uploadlists() {
+	blacklistraw := config.Localconfig.BlacklistNames
 	for _, bname := range blacklistraw {
-		Blacklist[bname] = 1
+		BlacklistNames[bname] = 1
+	}
+	blacklistraw = config.Localconfig.BlacklistUsers
+	for _, bname2 := range blacklistraw {
+		BlacklistUsers[bname2] = 1
+	}
+	femalelistraw := config.Localconfig.FemaleNames
+	for _, bname3 := range femalelistraw {
+		FemalelistNames[bname3] = 1
 	}
 }
 func InstaDirectMessage() {
@@ -52,6 +62,7 @@ func InstaShowComments(userIDToSpy string) {
 		log.Println(err)
 		return
 	}
+
 	resp, err := Insta.LatestUserFeed(r.User.ID)
 	if err != nil {
 		fmt.Println(err)
@@ -59,17 +70,28 @@ func InstaShowComments(userIDToSpy string) {
 		return
 	}
 	for _, item := range resp.Items {
+		time.Sleep(2 * time.Second)
 		resp2, _ := Insta.MediaComments(item.ID, "")
 		if err != nil {
+
 			fmt.Println(err)
 			log.Println(err)
 		}
 		for _, comment := range resp2.Comments {
 			fullname := strings.Split(comment.User.FullName, " ")
 			firstname := strings.ToLower(fullname[0])
-			gender := api.GetGender(firstname)
-			if gender == "female" && Blacklist[firstname] != 1 {
-				fmt.Printf(">> Following-> Name:%s \t|User:%s \t|Comment:%s \n", comment.User.FullName, comment.User.Username, comment.Text)
+			var gender string
+			if FemalelistNames[firstname] == 1 {
+				gender = "female"
+			}
+			/*if len(fullname) > 1 {
+				gender = api.GetGender(fullname[0] + "/" + fullname[1])
+			}*/
+			//fmt.Printf(">> COMMENT-> Name:%s \t|User:%s \t|Comment:%s \n", comment.User.FullName, comment.User.Username, comment.Text)
+			//log.Printf("%s %d %d %s \n", gender, BlacklistNames[firstname], BlacklistUsers[comment.User.Username], comment.User.Username)
+			if gender == "female" && BlacklistNames[firstname] != 1 && BlacklistUsers[comment.User.Username] != 1 && userIDToSpy != comment.User.Username {
+				time.Sleep(3 * time.Second)
+				log.Printf(">> Following-> Name:%s \t|User:%s \t|Comment:%s \n", comment.User.FullName, comment.User.Username, comment.Text)
 				_, err = Insta.Follow(comment.User.ID)
 				if err != nil {
 					fmt.Println(err)
@@ -83,4 +105,5 @@ func InstaShowComments(userIDToSpy string) {
 
 func InstaLogout() {
 	Insta.Logout()
+
 }
