@@ -5,9 +5,11 @@ import "os"
 import "fmt"
 
 type Configuration struct {
-	InstaUser string
-	InstaPass string
-	Blacklist []string
+	InstaUser      string
+	InstaPass      string
+	BlacklistNames []string
+	BlacklistUsers []string
+	FemaleNames    []string
 }
 
 var Localconfig *Configuration
