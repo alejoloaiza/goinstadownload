@@ -8,16 +8,17 @@ import (
 )
 
 type Name struct {
-	Name        string  `json:"name"`
-	Gender      string  `json:"gender"`
-	Probability float64 `json:"probability"`
-	Count       int     `json:"count"`
+	Scale     float64 `json:"scale"`
+	Gender    string  `json:"gender"`
+	FirstName string  `json:"firstName"`
+	LastName  string  `json:"lastName"`
+	ID        string  `json:"id"`
 }
 
 func GetGender(name string) string {
 
-	url := fmt.Sprintf("https://api.genderize.io/?name=%s", name)
-
+	url := fmt.Sprintf("https://api.namsor.com/onomastics/api/json/gender/%s", name)
+	fmt.Println(url)
 	// Build the request
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -36,5 +37,8 @@ func GetGender(name string) string {
 	if err := json.NewDecoder(resp.Body).Decode(&record); err != nil {
 		log.Println(err)
 	}
+	/*bodyBytes, _ := ioutil.ReadAll(resp.Body)
+	bodyString := string(bodyBytes)
+	fmt.Println(bodyString)*/
 	return record.Gender
 }
