@@ -10,6 +10,7 @@ import (
 )
 
 func main() {
+
 	var arg1 string
 	var sleeptime int
 	if len(os.Args) > 2 {
@@ -20,15 +21,14 @@ func main() {
 	}
 
 	_ = config.GetConfig(arg1)
-	instagram.UploadBlacklist()
+	instagram.Uploadlists()
 	for {
 		instagram.InstaLogin()
 		r := instagram.ListAllFollowing()
 		for _, user := range r {
 			fmt.Printf("Checking user: %s \n", user)
 			instagram.InstaShowComments(user)
-			time.Sleep(time.Minute * time.Duration(sleeptime))
-
+			time.Sleep(time.Second * time.Duration(sleeptime))
 		}
 		instagram.InstaLogout()
 		fmt.Printf("============== WAITING FOR NEXT CYCLE ===============")
