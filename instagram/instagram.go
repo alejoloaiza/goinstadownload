@@ -14,6 +14,10 @@ var Insta *goinsta.Instagram
 var BlacklistNames = make(map[string]int)
 var BlacklistUsers = make(map[string]int)
 var FemalelistNames = make(map[string]int)
+var FollowingList = make(map[string]int)
+var FollowCounter = 0
+
+const RateLimit = 100
 
 func InstaLogin() {
 	Insta = goinsta.New(config.Localconfig.InstaUser, config.Localconfig.InstaPass)
@@ -30,7 +34,9 @@ func ListAllFollowing() map[int]string {
 	}
 	for i, user := range users.Users {
 		response[i] = user.Username
+		FollowingList[user.Username] = 1
 	}
+
 	return response
 }
 func Uploadlists() {
@@ -54,28 +60,32 @@ func InstaDirectMessage() {
 	}
 	fmt.Println(resp)
 }
+func ValidateErrors(err error) {
+	if err.Error() == "The account is logged out" {
+		log.Println(err)
+		log.Println("Handling error: Login called")
+		time.Sleep(5 * time.Second)
+		InstaLogin()
+	}
+}
 func InstaShowComments(userIDToSpy string) {
 
 	r, err := Insta.GetUserByUsername(userIDToSpy)
 	if err != nil {
-		fmt.Println(err)
-		log.Println(err)
+		ValidateErrors(err)
 		return
 	}
 
 	resp, err := Insta.LatestUserFeed(r.User.ID)
 	if err != nil {
-		fmt.Println(err)
-		log.Println(err)
+		ValidateErrors(err)
 		return
 	}
 	for _, item := range resp.Items {
 		time.Sleep(2 * time.Second)
 		resp2, _ := Insta.MediaComments(item.ID, "")
 		if err != nil {
-
-			fmt.Println(err)
-			log.Println(err)
+			ValidateErrors(err)
 		}
 		for _, comment := range resp2.Comments {
 			fullname := strings.Split(comment.User.FullName, " ")
@@ -89,13 +99,17 @@ func InstaShowComments(userIDToSpy string) {
 			}*/
 			//fmt.Printf(">> COMMENT-> Name:%s \t|User:%s \t|Comment:%s \n", comment.User.FullName, comment.User.Username, comment.Text)
 			//log.Printf("%s %d %d %s \n", gender, BlacklistNames[firstname], BlacklistUsers[comment.User.Username], comment.User.Username)
-			if gender == "female" && BlacklistNames[firstname] != 1 && BlacklistUsers[comment.User.Username] != 1 && userIDToSpy != comment.User.Username {
+			if gender == "female" && BlacklistNames[firstname] != 1 && BlacklistUsers[comment.User.Username] != 1 && userIDToSpy != comment.User.Username && FollowingList[comment.User.Username] != 1 {
 				time.Sleep(3 * time.Second)
 				log.Printf(">> Following-> Name:%s \t|User:%s \t|Comment:%s \n", comment.User.FullName, comment.User.Username, comment.Text)
 				_, err = Insta.Follow(comment.User.ID)
+				FollowingList[comment.User.Username] = 1
+				FollowCounter++
+				if FollowCounter > RateLimit {
+					time.Sleep(12 * time.Hour)
+				}
 				if err != nil {
-					fmt.Println(err)
-					log.Println(err)
+					ValidateErrors(err)
 				}
 			}
 
