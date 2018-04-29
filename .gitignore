@@ -1,3 +1,4 @@
 main/main
 .vscode/*
 config/config.json
+main/log*
