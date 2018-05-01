@@ -35,4 +35,5 @@ func main() {
 		fmt.Printf("============== WAITING FOR NEXT CYCLE ===============")
 		time.Sleep(time.Minute * 1)
 	}
+
 }

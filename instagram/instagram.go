@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"goinstadownload/config"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -17,7 +18,7 @@ var FemalelistNames = make(map[string]int)
 var FollowingList = make(map[string]int)
 var FollowCounter = 0
 
-const RateLimit = 100
+const RateLimit = 200
 
 func InstaLogin() {
 	Insta = goinsta.New(config.Localconfig.InstaUser, config.Localconfig.InstaPass)
@@ -53,8 +54,13 @@ func Uploadlists() {
 		FemalelistNames[bname3] = 1
 	}
 }
-func InstaDirectMessage() {
-	resp, err := Insta.DirectMessage("some_girl", "hello")
+func InstaDirectMessage(UserId string, Message string) {
+	user, err := Insta.GetUserByUsername(UserId)
+	id := strconv.FormatInt(user.User.ID, 10)
+	if err != nil {
+		panic(err)
+	}
+	resp, err := Insta.DirectMessage(id, Message)
 	if err != nil {
 		fmt.Println(err)
 	}
