@@ -29,6 +29,7 @@ var (
 	BlacklistNames = make(map[string]int)
 	BlacklistUsers = make(map[string]int)
 	FemaleNames    = make(map[string]int)
+	TownPreference = make(map[int]string)
 	Insta          *goinsta.Instagram
 )
 
@@ -64,6 +65,10 @@ func Uploadlists() {
 	femalelistraw := config.Localconfig.FemaleNames
 	for _, bname3 := range femalelistraw {
 		FemaleNames[bname3] = 1
+	}
+	townpreferenceraw := config.Localconfig.TownPreference
+	for i, bname4 := range townpreferenceraw {
+		TownPreference[i] = bname4
 	}
 }
 func InstaDirectMessage(UserId string, Message string) {
@@ -119,10 +124,10 @@ func InstaShowComments(userIDToSpy string) {
 			//log.Printf("%s %d %d %s \n", gender, BlacklistNames[firstname], BlacklistUsers[comment.User.Username], comment.User.Username)
 			if gender == "female" && BlacklistNames[firstname] != 1 && BlacklistUsers[comment.User.Username] != 1 && userIDToSpy != comment.User.Username && FollowingList[comment.User.Username] != 1 {
 				time.Sleep(3 * time.Second)
-				log.Printf(">> Following-> Name:%s \t|User:%s \t|Comment:%s \n", comment.User.FullName, comment.User.Username, comment.Text)
 				_, err = Insta.Follow(comment.User.ID)
-				FollowingList[comment.User.Username] = 1
 				FollowCounter++
+				log.Printf(">> #%v Following-> Name:%s \t|User:%s \t|Comment:%s \n", FollowCounter, comment.User.FullName, comment.User.Username, comment.Text)
+				FollowingList[comment.User.Username] = 1
 				if FollowCounter >= RateLimit {
 					//	time.Sleep(12 * time.Hour)
 					os.Exit(0)
@@ -157,11 +162,12 @@ func DirectMessage(To string, Name string, Id int64) {
 	newMessage := PrepareMessage(Message, Name)
 
 	_, err := Insta.DirectMessage(strconv.FormatInt(Id, 10), newMessage)
-	log.Printf("Message to %s:%s >> %s \n", Name, To, newMessage)
 	if err != nil {
 		panic(err)
 	}
 	MessageCounter++
+	log.Printf("Message #%v to %s:%s >> %s \n", MessageCounter, Name, To, newMessage)
+
 }
 func Random(min int, max int) int {
 	return rand.Intn(max-min) + min
@@ -170,11 +176,8 @@ func Random(min int, max int) int {
 func InstaRandomMessages() {
 	rand.Seed(time.Now().UnixNano())
 
-	users, err := Insta.UserFollowing(Insta.InstaType.LoggedInUser.ID, "")
 	var response FollowingUser
-	if err != nil {
-		return
-	}
+
 	inbox, err := Insta.GetV2Inbox()
 	if err != nil {
 		return
@@ -184,6 +187,40 @@ func InstaRandomMessages() {
 			myInboxUsers[userthreads.Username] = 1
 		}
 	}
+	preferences, err := Insta.Timeline("")
+	if err != nil {
+		return
+	}
+	for _, item := range preferences.Items {
+		timelocation := strings.ToLower(item.Location.City)
+		if timelocation == "" {
+			timelocation = strings.ToLower(item.Location.Name)
+		}
+		if timelocation == "" {
+			continue
+		}
+		for _, preflocation := range TownPreference {
+
+			if strings.Contains(timelocation, preflocation) && myInboxUsers[item.User.Username] != 1 {
+				//fmt.Println(timelocation, preflocation, item.User.FullName, item.User.Username)
+
+				fullname := strings.Split(item.User.FullName, " ")
+				firstname := strings.ToLower(fullname[0])
+				response.ID = item.User.ID
+				response.Username = item.User.Username
+				response.Fullname = firstname
+				myInboxUsers[item.User.Username] = 1
+				myUsers = append(myUsers, response)
+
+			}
+		}
+
+	}
+	users, err := Insta.UserFollowing(Insta.InstaType.LoggedInUser.ID, "")
+	if err != nil {
+		return
+	}
+
 	for _, user := range users.Users {
 		if myInboxUsers[user.Username] != 1 {
 			fullname := strings.Split(user.FullName, " ")
@@ -196,12 +233,14 @@ func InstaRandomMessages() {
 	}
 
 	for _, dmuser := range myUsers {
+		//	fmt.Println(dmuser.Username, dmuser.Fullname, dmuser.ID)
 		DirectMessage(dmuser.Username, dmuser.Fullname, dmuser.ID)
 		time.Sleep(2 * time.Minute)
 		if MessageCounter >= RateLimit {
 			//time.Sleep(12 * time.Hour)
 			os.Exit(0)
 		}
+
 	}
 
 }

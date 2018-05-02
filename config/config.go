@@ -11,6 +11,7 @@ type Configuration struct {
 	BlacklistUsers []string
 	FemaleNames    []string
 	Sentences      []string
+	TownPreference []string
 }
 
 var Localconfig *Configuration
