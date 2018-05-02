@@ -12,28 +12,30 @@ import (
 func main() {
 
 	var arg1 string
-	var sleeptime int
+	var arg2 int
 	if len(os.Args) > 2 {
 		arg1 = os.Args[1]
-		sleeptime, _ = strconv.Atoi(os.Args[2])
+		arg2, _ = strconv.Atoi(os.Args[2])
 	} else {
 		fmt.Println("Error: Usage command <configpath> <wait time in minutes>")
 	}
 
-	_ = config.GetConfig(arg1)
+	_ = config.GetConfig("../config/config.json")
+	instagram.RateLimit = arg2
+	instagram.Uploadlists()
+	instagram.InstaLogin()
 
-	for {
-		instagram.Uploadlists()
-		instagram.InstaLogin()
+	if arg1 == "--follow" {
 		r := instagram.ListAllFollowing()
 		for _, user := range r {
 			fmt.Printf("Checking user: %s \n", user)
 			instagram.InstaShowComments(user)
-			time.Sleep(time.Second * time.Duration(sleeptime))
+			time.Sleep(time.Second * 15)
 		}
-		instagram.InstaLogout()
-		fmt.Printf("============== WAITING FOR NEXT CYCLE ===============")
-		time.Sleep(time.Minute * 1)
 	}
+	if arg1 == "--message" {
+		instagram.InstaRandomMessages()
+	}
+	defer instagram.InstaLogout()
 
 }
