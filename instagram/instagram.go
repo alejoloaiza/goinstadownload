@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"goinstadownload/config"
 	"log"
+	"math/rand"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -11,14 +13,24 @@ import (
 	"github.com/ahmdrz/goinsta"
 )
 
-var Insta *goinsta.Instagram
-var BlacklistNames = make(map[string]int)
-var BlacklistUsers = make(map[string]int)
-var FemalelistNames = make(map[string]int)
-var FollowingList = make(map[string]int)
-var FollowCounter = 0
+type FollowingUser struct {
+	ID       int64
+	Username string
+	Fullname string
+}
 
-const RateLimit = 200
+var (
+	myUsers        []FollowingUser
+	myInboxUsers   = make(map[string]int)
+	RateLimit      int
+	FollowCounter  = 0
+	MessageCounter = 0
+	FollowingList  = make(map[string]int)
+	BlacklistNames = make(map[string]int)
+	BlacklistUsers = make(map[string]int)
+	FemaleNames    = make(map[string]int)
+	Insta          *goinsta.Instagram
+)
 
 func InstaLogin() {
 	Insta = goinsta.New(config.Localconfig.InstaUser, config.Localconfig.InstaPass)
@@ -41,17 +53,17 @@ func ListAllFollowing() map[int]string {
 	return response
 }
 func Uploadlists() {
-	blacklistraw := config.Localconfig.BlacklistNames
-	for _, bname := range blacklistraw {
+	blacklistnameraw := config.Localconfig.BlacklistNames
+	for _, bname := range blacklistnameraw {
 		BlacklistNames[bname] = 1
 	}
-	blacklistraw = config.Localconfig.BlacklistUsers
-	for _, bname2 := range blacklistraw {
+	blacklistuserraw := config.Localconfig.BlacklistUsers
+	for _, bname2 := range blacklistuserraw {
 		BlacklistUsers[bname2] = 1
 	}
 	femalelistraw := config.Localconfig.FemaleNames
 	for _, bname3 := range femalelistraw {
-		FemalelistNames[bname3] = 1
+		FemaleNames[bname3] = 1
 	}
 }
 func InstaDirectMessage(UserId string, Message string) {
@@ -97,7 +109,7 @@ func InstaShowComments(userIDToSpy string) {
 			fullname := strings.Split(comment.User.FullName, " ")
 			firstname := strings.ToLower(fullname[0])
 			var gender string
-			if FemalelistNames[firstname] == 1 {
+			if FemaleNames[firstname] == 1 {
 				gender = "female"
 			}
 			/*if len(fullname) > 1 {
@@ -111,8 +123,9 @@ func InstaShowComments(userIDToSpy string) {
 				_, err = Insta.Follow(comment.User.ID)
 				FollowingList[comment.User.Username] = 1
 				FollowCounter++
-				if FollowCounter > RateLimit {
-					time.Sleep(12 * time.Hour)
+				if FollowCounter >= RateLimit {
+					//	time.Sleep(12 * time.Hour)
+					os.Exit(0)
 				}
 				if err != nil {
 					ValidateErrors(err)
@@ -125,5 +138,70 @@ func InstaShowComments(userIDToSpy string) {
 
 func InstaLogout() {
 	Insta.Logout()
+
+}
+
+func PrepareMessage(Message string, NameOfUser string) string {
+	resp := ""
+	if FemaleNames[strings.ToLower(NameOfUser)] == 1 {
+		resp = strings.Replace(Message, "{name}", strings.ToLower(NameOfUser), 1)
+	} else {
+		resp = strings.Replace(Message, "{name}", "", 1)
+	}
+	return resp
+
+}
+func DirectMessage(To string, Name string, Id int64) {
+
+	Message := config.Localconfig.Sentences[Random(0, 9)]
+	newMessage := PrepareMessage(Message, Name)
+
+	_, err := Insta.DirectMessage(strconv.FormatInt(Id, 10), newMessage)
+	log.Printf("Message to %s:%s >> %s \n", Name, To, newMessage)
+	if err != nil {
+		panic(err)
+	}
+	MessageCounter++
+}
+func Random(min int, max int) int {
+	return rand.Intn(max-min) + min
+}
+
+func InstaRandomMessages() {
+	rand.Seed(time.Now().UnixNano())
+
+	users, err := Insta.UserFollowing(Insta.InstaType.LoggedInUser.ID, "")
+	var response FollowingUser
+	if err != nil {
+		return
+	}
+	inbox, err := Insta.GetV2Inbox()
+	if err != nil {
+		return
+	}
+	for _, thread := range inbox.Inbox.Threads {
+		for _, userthreads := range thread.Users {
+			myInboxUsers[userthreads.Username] = 1
+		}
+	}
+	for _, user := range users.Users {
+		if myInboxUsers[user.Username] != 1 {
+			fullname := strings.Split(user.FullName, " ")
+			firstname := strings.ToLower(fullname[0])
+			response.Username = user.Username
+			response.ID = user.ID
+			response.Fullname = firstname
+			myUsers = append(myUsers, response)
+		}
+	}
+
+	for _, dmuser := range myUsers {
+		DirectMessage(dmuser.Username, dmuser.Fullname, dmuser.ID)
+		time.Sleep(2 * time.Minute)
+		if MessageCounter >= RateLimit {
+			//time.Sleep(12 * time.Hour)
+			os.Exit(0)
+		}
+	}
 
 }
