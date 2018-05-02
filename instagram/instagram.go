@@ -187,35 +187,40 @@ func InstaRandomMessages() {
 			myInboxUsers[userthreads.Username] = 1
 		}
 	}
-	preferences, err := Insta.Timeline("")
-	if err != nil {
-		return
-	}
-	for _, item := range preferences.Items {
-		timelocation := strings.ToLower(item.Location.City)
-		if timelocation == "" {
-			timelocation = strings.ToLower(item.Location.Name)
+	var timeLineCounter int
+	var nextMaxID string
+	for timeLineCounter < 5 {
+		preferences, err := Insta.Timeline(nextMaxID)
+		if err != nil {
+			return
 		}
-		if timelocation == "" {
-			continue
-		}
-		for _, preflocation := range TownPreference {
-
-			if strings.Contains(timelocation, preflocation) && myInboxUsers[item.User.Username] != 1 {
-				//fmt.Println(timelocation, preflocation, item.User.FullName, item.User.Username)
-
-				fullname := strings.Split(item.User.FullName, " ")
-				firstname := strings.ToLower(fullname[0])
-				response.ID = item.User.ID
-				response.Username = item.User.Username
-				response.Fullname = firstname
-				myInboxUsers[item.User.Username] = 1
-				myUsers = append(myUsers, response)
-
+		nextMaxID = preferences.NextMaxID
+		for _, item := range preferences.Items {
+			timelocation := strings.ToLower(item.Location.City)
+			if timelocation == "" {
+				timelocation = strings.ToLower(item.Location.Name)
 			}
-		}
+			if timelocation == "" {
+				continue
+			}
+			for _, preflocation := range TownPreference {
 
+				if strings.Contains(timelocation, preflocation) && myInboxUsers[item.User.Username] != 1 {
+					fullname := strings.Split(item.User.FullName, " ")
+					firstname := strings.ToLower(fullname[0])
+					response.ID = item.User.ID
+					response.Username = item.User.Username
+					response.Fullname = firstname
+					myInboxUsers[item.User.Username] = 1
+					myUsers = append(myUsers, response)
+
+				}
+			}
+
+		}
+		timeLineCounter++
 	}
+
 	users, err := Insta.UserFollowing(Insta.InstaType.LoggedInUser.ID, "")
 	if err != nil {
 		return
@@ -233,7 +238,7 @@ func InstaRandomMessages() {
 	}
 
 	for _, dmuser := range myUsers {
-		//	fmt.Println(dmuser.Username, dmuser.Fullname, dmuser.ID)
+		fmt.Println(dmuser.Username, dmuser.Fullname, dmuser.ID)
 		DirectMessage(dmuser.Username, dmuser.Fullname, dmuser.ID)
 		time.Sleep(2 * time.Minute)
 		if MessageCounter >= RateLimit {
