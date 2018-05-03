@@ -109,13 +109,18 @@ func StartIRCprocess() {
 func ProcessCommand(command []string) string {
 	var bodyString string
 	if strings.TrimSpace(command[0]) == "init" && len(command) >= 3 {
+		var arg3 int
 		arg1 := command[1]
 		arg2, err := strconv.Atoi(strings.TrimSuffix(strings.TrimSuffix(command[2], "\n"), "\r"))
+		if len(command) >= 4 {
+			arg3, err = strconv.Atoi(strings.TrimSuffix(strings.TrimSuffix(command[3], "\n"), "\r"))
+		}
 		if err != nil {
 			log.Println(err)
 			return ""
 		}
 		instagram.RateLimit = arg2
+		instagram.SleepTime = arg3
 		if arg1 == "-follow" {
 			go ExecuteFollowProcess()
 		}

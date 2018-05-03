@@ -39,7 +39,9 @@ func InstaLogin(out chan string) {
 	OutChan = out
 	Insta = goinsta.New(config.Localconfig.InstaUser, config.Localconfig.InstaPass)
 	if err := Insta.Login(); err != nil {
-		panic(err)
+		fmt.Println("Error in Login")
+		log.Println(err)
+		return
 	}
 	OutChan <- "Connected ok to Instagram"
 
@@ -79,12 +81,16 @@ func InstaDirectMessage(UserId string, Message string) {
 	user, err := Insta.GetUserByUsername(UserId)
 	id := strconv.FormatInt(user.User.ID, 10)
 	if err != nil {
-		panic(err)
+		fmt.Println("Error in GetUserByUsername")
+		log.Println(err)
+		return
 	}
 	resp, err := Insta.DirectMessage(id, Message)
 
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("Error in DirectMessage")
+		log.Println(err)
+		return
 	}
 	fmt.Println(resp)
 }
@@ -109,7 +115,6 @@ func InstaShowComments(userIDToSpy string) {
 		ValidateErrors(err)
 		return
 	}
-Media:
 	for _, item := range resp.Items {
 		time.Sleep(2 * time.Second)
 		resp2, _ := Insta.MediaComments(item.ID, "")
@@ -128,11 +133,13 @@ Media:
 				_, err = Insta.Follow(comment.User.ID)
 				FollowCounter++
 				log.Printf(">> #%v Following-> Name:%s \t|User:%s \t|Comment:%s \n", FollowCounter, comment.User.FullName, comment.User.Username, comment.Text)
+				OutChan <- "Following " + comment.User.Username
 				FollowingList[comment.User.Username] = 1
 				if FollowCounter >= RateLimit {
 					//	time.Sleep(12 * time.Hour)
 					log.Printf("End of process, #%v Follow requests sent\n", FollowCounter)
-					break Media
+					OutChan <- "End of process"
+					return
 				}
 				if err != nil {
 					ValidateErrors(err)
@@ -165,7 +172,8 @@ func DirectMessage(To string, Name string, Id int64, Pref bool) {
 
 	_, err := Insta.DirectMessage(strconv.FormatInt(Id, 10), newMessage)
 	if err != nil {
-		panic(err)
+		log.Println(err)
+		return
 	}
 	MessageCounter++
 	if Pref {
@@ -173,7 +181,7 @@ func DirectMessage(To string, Name string, Id int64, Pref bool) {
 	} else {
 		log.Printf("Message #%v to %s:%s >> %s \n", MessageCounter, Name, To, newMessage)
 	}
-	OutChan <- "Message sent to " + Name
+	OutChan <- "Message sent to " + Name + " User " + To
 
 }
 func Random(min int, max int) int {
@@ -189,6 +197,8 @@ func InstaRandomMessages() {
 	}
 	inbox, err := Insta.GetV2Inbox()
 	if err != nil {
+		fmt.Println("Error in GetV2Inbox")
+		log.Println(err)
 		return
 	}
 	for _, thread := range inbox.Inbox.Threads {
@@ -201,6 +211,8 @@ func InstaRandomMessages() {
 	for timeLineCounter < 5 {
 		preferences, err := Insta.Timeline(nextMaxID)
 		if err != nil {
+			fmt.Println("Error in Timeline")
+			log.Println(err)
 			return
 		}
 		nextMaxID = preferences.NextMaxID
@@ -233,6 +245,7 @@ func InstaRandomMessages() {
 
 	users, err := Insta.UserFollowing(Insta.InstaType.LoggedInUser.ID, "")
 	if err != nil {
+		log.Println(err)
 		return
 	}
 
@@ -251,7 +264,7 @@ func InstaRandomMessages() {
 	for _, dmuser := range myUsers {
 		//fmt.Println(dmuser.Username, dmuser.Fullname, dmuser.ID)
 		DirectMessage(dmuser.Username, dmuser.Fullname, dmuser.ID, dmuser.Preference)
-		time.Sleep(time.Duration(SleepTime) * time.Minute)
+
 		if MessageCounter >= RateLimit {
 			//time.Sleep(12 * time.Hour)
 			log.Printf("End of process, #%v Messages sent\n", MessageCounter)
@@ -259,7 +272,7 @@ func InstaRandomMessages() {
 			break
 			//	os.Exit(0)
 		}
-
+		time.Sleep(time.Duration(SleepTime) * time.Minute)
 	}
 
 }
