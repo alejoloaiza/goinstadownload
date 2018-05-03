@@ -12,6 +12,10 @@ type Configuration struct {
 	FemaleNames    []string
 	Sentences      []string
 	TownPreference []string
+	IRCNick        string
+	IRCChannels    string
+	IRCUser        string
+	IRCServerPort  string
 }
 
 var Localconfig *Configuration
