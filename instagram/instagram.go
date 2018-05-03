@@ -14,9 +14,10 @@ import (
 )
 
 type FollowingUser struct {
-	ID       int64
-	Username string
-	Fullname string
+	ID         int64
+	Username   string
+	Fullname   string
+	Preference bool
 }
 
 var (
@@ -156,7 +157,7 @@ func PrepareMessage(Message string, NameOfUser string) string {
 	return resp
 
 }
-func DirectMessage(To string, Name string, Id int64) {
+func DirectMessage(To string, Name string, Id int64, Pref bool) {
 
 	Message := config.Localconfig.Sentences[Random(0, 9)]
 	newMessage := PrepareMessage(Message, Name)
@@ -166,7 +167,11 @@ func DirectMessage(To string, Name string, Id int64) {
 		panic(err)
 	}
 	MessageCounter++
-	log.Printf("Message #%v to %s:%s >> %s \n", MessageCounter, Name, To, newMessage)
+	if Pref {
+		log.Printf("Message #%v with PREFERENCE to %s:%s >> %s \n", MessageCounter, Name, To, newMessage)
+	} else {
+		log.Printf("Message #%v to %s:%s >> %s \n", MessageCounter, Name, To, newMessage)
+	}
 
 }
 func Random(min int, max int) int {
@@ -212,6 +217,7 @@ func InstaRandomMessages() {
 					response.Username = item.User.Username
 					response.Fullname = firstname
 					myInboxUsers[item.User.Username] = 1
+					response.Preference = true
 					myUsers = append(myUsers, response)
 
 				}
@@ -233,14 +239,15 @@ func InstaRandomMessages() {
 			response.Username = user.Username
 			response.ID = user.ID
 			response.Fullname = firstname
+			response.Preference = false
 			myUsers = append(myUsers, response)
 		}
 	}
 
 	for _, dmuser := range myUsers {
-		fmt.Println(dmuser.Username, dmuser.Fullname, dmuser.ID)
-		DirectMessage(dmuser.Username, dmuser.Fullname, dmuser.ID)
-		time.Sleep(2 * time.Minute)
+		//fmt.Println(dmuser.Username, dmuser.Fullname, dmuser.ID)
+		DirectMessage(dmuser.Username, dmuser.Fullname, dmuser.ID, dmuser.Preference)
+		time.Sleep(10 * time.Minute)
 		if MessageCounter >= RateLimit {
 			//time.Sleep(12 * time.Hour)
 			os.Exit(0)
