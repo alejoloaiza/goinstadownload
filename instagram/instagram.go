@@ -5,7 +5,6 @@ import (
 	"goinstadownload/config"
 	"log"
 	"math/rand"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -24,6 +23,7 @@ var (
 	myUsers        []FollowingUser
 	myInboxUsers   = make(map[string]int)
 	RateLimit      int
+	SleepTime      int
 	FollowCounter  = 0
 	MessageCounter = 0
 	FollowingList  = make(map[string]int)
@@ -32,13 +32,16 @@ var (
 	FemaleNames    = make(map[string]int)
 	TownPreference = make(map[int]string)
 	Insta          *goinsta.Instagram
+	OutChan        chan string
 )
 
-func InstaLogin() {
+func InstaLogin(out chan string) {
+	OutChan = out
 	Insta = goinsta.New(config.Localconfig.InstaUser, config.Localconfig.InstaPass)
 	if err := Insta.Login(); err != nil {
 		panic(err)
 	}
+	OutChan <- "Connected ok to Instagram"
 
 }
 func ListAllFollowing() map[int]string {
@@ -79,6 +82,7 @@ func InstaDirectMessage(UserId string, Message string) {
 		panic(err)
 	}
 	resp, err := Insta.DirectMessage(id, Message)
+
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -89,7 +93,7 @@ func ValidateErrors(err error) {
 		log.Println(err)
 		log.Println("Handling error: Login called")
 		time.Sleep(5 * time.Second)
-		InstaLogin()
+		//InstaLogin()
 	}
 }
 func InstaShowComments(userIDToSpy string) {
@@ -105,6 +109,7 @@ func InstaShowComments(userIDToSpy string) {
 		ValidateErrors(err)
 		return
 	}
+Media:
 	for _, item := range resp.Items {
 		time.Sleep(2 * time.Second)
 		resp2, _ := Insta.MediaComments(item.ID, "")
@@ -118,11 +123,6 @@ func InstaShowComments(userIDToSpy string) {
 			if FemaleNames[firstname] == 1 {
 				gender = "female"
 			}
-			/*if len(fullname) > 1 {
-				gender = api.GetGender(fullname[0] + "/" + fullname[1])
-			}*/
-			//fmt.Printf(">> COMMENT-> Name:%s \t|User:%s \t|Comment:%s \n", comment.User.FullName, comment.User.Username, comment.Text)
-			//log.Printf("%s %d %d %s \n", gender, BlacklistNames[firstname], BlacklistUsers[comment.User.Username], comment.User.Username)
 			if gender == "female" && BlacklistNames[firstname] != 1 && BlacklistUsers[comment.User.Username] != 1 && userIDToSpy != comment.User.Username && FollowingList[comment.User.Username] != 1 {
 				time.Sleep(3 * time.Second)
 				_, err = Insta.Follow(comment.User.ID)
@@ -131,7 +131,8 @@ func InstaShowComments(userIDToSpy string) {
 				FollowingList[comment.User.Username] = 1
 				if FollowCounter >= RateLimit {
 					//	time.Sleep(12 * time.Hour)
-					os.Exit(0)
+					log.Printf("End of process, #%v Follow requests sent\n", FollowCounter)
+					break Media
 				}
 				if err != nil {
 					ValidateErrors(err)
@@ -159,7 +160,7 @@ func PrepareMessage(Message string, NameOfUser string) string {
 }
 func DirectMessage(To string, Name string, Id int64, Pref bool) {
 
-	Message := config.Localconfig.Sentences[Random(0, 9)]
+	Message := config.Localconfig.Sentences[Random(0, 10)]
 	newMessage := PrepareMessage(Message, Name)
 
 	_, err := Insta.DirectMessage(strconv.FormatInt(Id, 10), newMessage)
@@ -172,6 +173,7 @@ func DirectMessage(To string, Name string, Id int64, Pref bool) {
 	} else {
 		log.Printf("Message #%v to %s:%s >> %s \n", MessageCounter, Name, To, newMessage)
 	}
+	OutChan <- "Message sent to " + Name
 
 }
 func Random(min int, max int) int {
@@ -182,7 +184,9 @@ func InstaRandomMessages() {
 	rand.Seed(time.Now().UnixNano())
 
 	var response FollowingUser
-
+	if SleepTime == 0 {
+		SleepTime = 10
+	}
 	inbox, err := Insta.GetV2Inbox()
 	if err != nil {
 		return
@@ -247,10 +251,13 @@ func InstaRandomMessages() {
 	for _, dmuser := range myUsers {
 		//fmt.Println(dmuser.Username, dmuser.Fullname, dmuser.ID)
 		DirectMessage(dmuser.Username, dmuser.Fullname, dmuser.ID, dmuser.Preference)
-		time.Sleep(10 * time.Minute)
+		time.Sleep(time.Duration(SleepTime) * time.Minute)
 		if MessageCounter >= RateLimit {
 			//time.Sleep(12 * time.Hour)
-			os.Exit(0)
+			log.Printf("End of process, #%v Messages sent\n", MessageCounter)
+			OutChan <- "End of process"
+			break
+			//	os.Exit(0)
 		}
 
 	}
