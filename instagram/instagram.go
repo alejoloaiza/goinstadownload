@@ -102,50 +102,55 @@ func ValidateErrors(err error) {
 		//InstaLogin()
 	}
 }
-func InstaShowComments(userIDToSpy string) {
+func InstaShowComments() {
 
-	r, err := Insta.GetUserByUsername(userIDToSpy)
-	if err != nil {
-		ValidateErrors(err)
-		return
-	}
+	following := ListAllFollowing()
 
-	resp, err := Insta.LatestUserFeed(r.User.ID)
-	if err != nil {
-		ValidateErrors(err)
-		return
-	}
-	for _, item := range resp.Items {
-		time.Sleep(2 * time.Second)
-		resp2, _ := Insta.MediaComments(item.ID, "")
+	for _, UserToFollow := range following {
+
+		r, err := Insta.GetUserByUsername(UserToFollow)
 		if err != nil {
 			ValidateErrors(err)
+			return
 		}
-		for _, comment := range resp2.Comments {
-			fullname := strings.Split(comment.User.FullName, " ")
-			firstname := strings.ToLower(fullname[0])
-			var gender string
-			if FemaleNames[firstname] == 1 {
-				gender = "female"
-			}
-			if gender == "female" && BlacklistNames[firstname] != 1 && BlacklistUsers[comment.User.Username] != 1 && userIDToSpy != comment.User.Username && FollowingList[comment.User.Username] != 1 {
-				time.Sleep(3 * time.Second)
-				_, err = Insta.Follow(comment.User.ID)
-				FollowCounter++
-				log.Printf(">> #%v Following-> Name:%s \t|User:%s \t|Comment:%s \n", FollowCounter, comment.User.FullName, comment.User.Username, comment.Text)
-				OutChan <- "Following " + comment.User.Username
-				FollowingList[comment.User.Username] = 1
-				if FollowCounter >= RateLimit {
-					//	time.Sleep(12 * time.Hour)
-					log.Printf("End of process, #%v Follow requests sent\n", FollowCounter)
-					OutChan <- "End of process"
-					return
-				}
-				if err != nil {
-					ValidateErrors(err)
-				}
-			}
 
+		resp, err := Insta.LatestUserFeed(r.User.ID)
+		if err != nil {
+			ValidateErrors(err)
+			return
+		}
+		for _, item := range resp.Items {
+			time.Sleep(2 * time.Second)
+			resp2, _ := Insta.MediaComments(item.ID, "")
+			if err != nil {
+				ValidateErrors(err)
+			}
+			for _, comment := range resp2.Comments {
+				fullname := strings.Split(comment.User.FullName, " ")
+				firstname := strings.ToLower(fullname[0])
+				var gender string
+				if FemaleNames[firstname] == 1 {
+					gender = "female"
+				}
+				if gender == "female" && BlacklistNames[firstname] != 1 && BlacklistUsers[comment.User.Username] != 1 && UserToFollow != comment.User.Username && FollowingList[comment.User.Username] != 1 {
+					time.Sleep(3 * time.Second)
+					_, err = Insta.Follow(comment.User.ID)
+					FollowCounter++
+					log.Printf(">> #%v Following-> Name:%s \t|User:%s \t|Comment:%s \n", FollowCounter, comment.User.FullName, comment.User.Username, comment.Text)
+					OutChan <- "Following " + comment.User.Username
+					FollowingList[comment.User.Username] = 1
+					if FollowCounter >= RateLimit {
+						//	time.Sleep(12 * time.Hour)
+						log.Printf("End of process, #%v Follow requests sent\n", FollowCounter)
+						OutChan <- "End of process"
+						return
+					}
+					if err != nil {
+						ValidateErrors(err)
+					}
+				}
+
+			}
 		}
 	}
 }

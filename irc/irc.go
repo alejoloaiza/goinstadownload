@@ -133,17 +133,14 @@ func ProcessCommand(command []string) string {
 	return bodyString
 }
 func ExecuteFollowProcess() {
+	instagram.FollowCounter = 0
 	instagram.InstaLogin(InfoChan)
-	r := instagram.ListAllFollowing()
-	for _, user := range r {
-		log.Printf("Checking user: %s \n", user)
-		instagram.InstaShowComments(user)
-		time.Sleep(time.Second * 15)
-	}
+	instagram.InstaShowComments()
 	defer instagram.InstaLogout()
 }
 
 func ExecuteMessageProcess() {
+	instagram.MessageCounter = 0
 	instagram.InstaLogin(InfoChan)
 	instagram.InstaRandomMessages()
 	defer instagram.InstaLogout()
