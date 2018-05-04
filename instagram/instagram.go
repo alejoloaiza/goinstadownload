@@ -32,18 +32,20 @@ var (
 	FemaleNames    = make(map[string]int)
 	TownPreference = make(map[int]string)
 	Insta          *goinsta.Instagram
+	InChan         chan string
 	OutChan        chan string
 )
 
-func InstaLogin(out chan string) {
+func InstaLogin(in chan string, out chan string) {
 	OutChan = out
+	InChan = in
 	Insta = goinsta.New(config.Localconfig.InstaUser, config.Localconfig.InstaPass)
 	if err := Insta.Login(); err != nil {
 		fmt.Println("Error in Login")
 		log.Println(err)
 		return
 	}
-	OutChan <- "Connected ok to Instagram"
+	InChan <- "Connected ok to Instagram"
 
 }
 func ListAllFollowing() map[int]string {
@@ -107,7 +109,7 @@ func InstaShowComments() {
 	following := ListAllFollowing()
 
 	for _, UserToFollow := range following {
-
+		//log.Printf("Checking user: %s ", UserToFollow)
 		r, err := Insta.GetUserByUsername(UserToFollow)
 		if err != nil {
 			ValidateErrors(err)
@@ -126,9 +128,11 @@ func InstaShowComments() {
 				ValidateErrors(err)
 			}
 			for _, comment := range resp2.Comments {
+
 				fullname := strings.Split(comment.User.FullName, " ")
 				firstname := strings.ToLower(fullname[0])
 				var gender string
+				//log.Printf("Checking comment of: %s ", comment.User.FullName)
 				if FemaleNames[firstname] == 1 {
 					gender = "female"
 				}
@@ -137,21 +141,32 @@ func InstaShowComments() {
 					_, err = Insta.Follow(comment.User.ID)
 					FollowCounter++
 					log.Printf(">> #%v Following-> Name:%s \t|User:%s \t|Comment:%s \n", FollowCounter, comment.User.FullName, comment.User.Username, comment.Text)
-					OutChan <- "Following " + comment.User.Username
+					InChan <- "Following #" + strconv.Itoa(FollowCounter) + " -> " + comment.User.Username
 					FollowingList[comment.User.Username] = 1
 					if FollowCounter >= RateLimit {
 						//	time.Sleep(12 * time.Hour)
 						log.Printf("End of process, #%v Follow requests sent\n", FollowCounter)
-						OutChan <- "End of process"
+						InChan <- "End of process " + strconv.Itoa(FollowCounter)
 						return
 					}
 					if err != nil {
 						ValidateErrors(err)
 					}
 				}
+				select {
+				case msg := <-OutChan:
+					if msg == "stop" {
+						InChan <- "Stopped process on #" + strconv.Itoa(FollowCounter)
+						log.Printf("Stopped, #%v Follow requests sent\n", FollowCounter)
+						return
+					}
+				default:
+
+				}
 
 			}
 		}
+		time.Sleep(5 * time.Second)
 	}
 }
 
@@ -186,7 +201,7 @@ func DirectMessage(To string, Name string, Id int64, Pref bool) {
 	} else {
 		log.Printf("Message #%v to %s:%s >> %s \n", MessageCounter, Name, To, newMessage)
 	}
-	OutChan <- "Message sent to " + Name + " User " + To
+	InChan <- "Message sent to " + Name + " User " + To
 
 }
 func Random(min int, max int) int {
@@ -271,13 +286,21 @@ func InstaRandomMessages() {
 		DirectMessage(dmuser.Username, dmuser.Fullname, dmuser.ID, dmuser.Preference)
 
 		if MessageCounter >= RateLimit {
-			//time.Sleep(12 * time.Hour)
 			log.Printf("End of process, #%v Messages sent\n", MessageCounter)
-			OutChan <- "End of process"
+			InChan <- "End of process"
 			break
-			//	os.Exit(0)
 		}
-		time.Sleep(time.Duration(SleepTime) * time.Minute)
+		select {
+		case msg := <-OutChan:
+			if msg == "stop" {
+				InChan <- "Stopped process on #" + strconv.Itoa(MessageCounter)
+				log.Printf("Stopped, #%v Follow requests sent\n", FollowCounter)
+				return
+			}
+		default:
+			time.Sleep(time.Duration(SleepTime) * time.Minute)
+		}
+
 	}
 
 }

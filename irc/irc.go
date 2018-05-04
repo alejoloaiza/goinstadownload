@@ -16,13 +16,15 @@ import (
 var (
 	Context    string
 	Connection net.Conn
-	InfoChan   chan string
+	InChan     chan string
+	OutChan    chan string
 )
 
 func StartIRCprocess() {
 	//MsgChan := make(chan string)
 	//allconfig := config.GetConfig(configpath)
-	InfoChan = make(chan string)
+	InChan = make(chan string)
+	OutChan = make(chan string)
 	for {
 		Connection, err := net.Dial("tcp", config.Localconfig.IRCServerPort)
 
@@ -108,6 +110,9 @@ func StartIRCprocess() {
 
 func ProcessCommand(command []string) string {
 	var bodyString string
+	if strings.TrimSpace(command[0]) == "stop" {
+		OutChan <- "stop"
+	}
 	if strings.TrimSpace(command[0]) == "init" && len(command) >= 3 {
 		var arg3 int
 		arg1 := command[1]
@@ -129,30 +134,30 @@ func ProcessCommand(command []string) string {
 		}
 
 	}
-	bodyString = "Executed in background"
+	bodyString = "Command received... processing"
 	return bodyString
 }
 func ExecuteFollowProcess() {
 	instagram.FollowCounter = 0
-	instagram.InstaLogin(InfoChan)
+	instagram.InstaLogin(InChan, OutChan)
 	instagram.InstaShowComments()
 	defer instagram.InstaLogout()
 }
 
 func ExecuteMessageProcess() {
 	instagram.MessageCounter = 0
-	instagram.InstaLogin(InfoChan)
+	instagram.InstaLogin(InChan, OutChan)
 	instagram.InstaRandomMessages()
 	defer instagram.InstaLogout()
 }
 func RoutineWriter(Response net.Conn) {
 	for {
 		select {
-		case msg := <-InfoChan:
+		case msg := <-InChan:
 			if Context != "" {
 				fmt.Fprintln(Response, "PRIVMSG "+Context+" :"+msg)
 			}
+
 		}
-		time.Sleep(time.Second * 2)
 	}
 }
