@@ -169,6 +169,9 @@ func InstaShowComments(InUserToFollow string) {
 		}
 		time.Sleep(5 * time.Second)
 	}
+	log.Printf("End of process, #%v Follow requests sent\n", FollowCounter)
+	InChan <- "End of process " + strconv.Itoa(FollowCounter)
+
 }
 
 func InstaLogout() {
