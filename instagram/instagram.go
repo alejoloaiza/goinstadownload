@@ -40,9 +40,9 @@ func InstaLogin(in chan string, out chan string) {
 	OutChan = out
 	InChan = in
 	Insta = goinsta.New(config.Localconfig.InstaUser, config.Localconfig.InstaPass)
-	if err := Insta.Login(); err != nil {
-		fmt.Println("Error in Login")
-		log.Println(err)
+	err := Insta.Login()
+	if err != nil {
+		ValidateErrors(err, "Login")
 		return
 	}
 	InChan <- "Connected ok to Instagram"
@@ -52,6 +52,7 @@ func ListAllFollowing() map[int]string {
 	users, err := Insta.UserFollowing(Insta.InstaType.LoggedInUser.ID, "")
 	var response = make(map[int]string)
 	if err != nil {
+		ValidateErrors(err, "UserFollowing")
 		return nil
 	}
 	for i, user := range users.Users {
@@ -84,15 +85,13 @@ func InstaDirectMessage(UserId string, Message string) {
 	user, err := Insta.GetUserByUsername(UserId)
 	id := strconv.FormatInt(user.User.ID, 10)
 	if err != nil {
-		fmt.Println("Error in GetUserByUsername")
-		log.Println(err)
+		ValidateErrors(err, "GetUserByUsername")
 		return
 	}
 	resp, err := Insta.DirectMessage(id, Message)
 
 	if err != nil {
-		fmt.Println("Error in DirectMessage")
-		log.Println(err)
+		ValidateErrors(err, "DirectMessage")
 		return
 	}
 	fmt.Println(resp)
@@ -100,7 +99,6 @@ func InstaDirectMessage(UserId string, Message string) {
 func ValidateErrors(err error, addinfo string) {
 	log.Println(addinfo + " " + err.Error())
 	InChan <- addinfo + " " + err.Error()
-
 }
 func InstaShowComments(InUserToFollow string) {
 	following := make(map[int]string)
@@ -195,7 +193,7 @@ func DirectMessage(To string, Name string, Id int64, Pref bool) {
 
 	_, err := Insta.DirectMessage(strconv.FormatInt(Id, 10), newMessage)
 	if err != nil {
-		log.Println(err)
+		ValidateErrors(err, "DirectMessage")
 		return
 	}
 	MessageCounter++
@@ -220,8 +218,7 @@ func InstaRandomMessages() {
 	}
 	inbox, err := Insta.GetV2Inbox()
 	if err != nil {
-		fmt.Println("Error in GetV2Inbox")
-		log.Println(err)
+		ValidateErrors(err, "GetV2Inbox")
 		return
 	}
 	for _, thread := range inbox.Inbox.Threads {
@@ -234,8 +231,7 @@ func InstaRandomMessages() {
 	for timeLineCounter < 5 {
 		preferences, err := Insta.Timeline(nextMaxID)
 		if err != nil {
-			fmt.Println("Error in Timeline")
-			log.Println(err)
+			ValidateErrors(err, "Timeline")
 			return
 		}
 		nextMaxID = preferences.NextMaxID
@@ -268,7 +264,7 @@ func InstaRandomMessages() {
 
 	users, err := Insta.UserFollowing(Insta.InstaType.LoggedInUser.ID, "")
 	if err != nil {
-		log.Println(err)
+		ValidateErrors(err, "UserFollowing")
 		return
 	}
 

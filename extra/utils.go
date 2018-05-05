@@ -31,5 +31,5 @@ func IsInteger(s string) bool {
 	return err == nil
 }
 func RemoveEnds(input string) string {
-	return strings.Trim(strings.Trim(strings.Trim(input, "\n"), "\r"), "\t")
+	return strings.TrimSpace(strings.Trim(strings.Trim(strings.Trim(input, "\n"), "\r"), "\t"))
 }

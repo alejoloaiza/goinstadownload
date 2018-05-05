@@ -110,21 +110,23 @@ func StartIRCprocess() {
 
 func ProcessCommand(command []string) string {
 	var bodyString string
-	var UserToFollow string
+	var UserToFollow string = ""
 	if strings.TrimSpace(command[0]) == "stop" {
 		OutChan <- "stop"
 		bodyString = "Command received... processing"
 	}
-	if strings.TrimSpace(command[0]) == "init" && len(command) >= 3 {
-		var arg3 int
+	if len(command) >= 3 && strings.TrimSpace(command[0]) == "init" {
+		var arg2, arg3 int
+		var err error
 		arg1 := command[1]
-		arg2, err := strconv.Atoi(extra.RemoveEnds(command[2]))
+		if extra.IsInteger(extra.RemoveEnds(command[2])) {
+			arg2, err = strconv.Atoi(extra.RemoveEnds(command[2]))
+		} else {
+			UserToFollow = extra.RemoveEnds(command[2])
+		}
+
 		if len(command) >= 4 {
-			if extra.IsInteger(extra.RemoveEnds(command[3])) {
-				arg3, err = strconv.Atoi(extra.RemoveEnds(command[3]))
-			} else {
-				UserToFollow = extra.RemoveEnds(command[3])
-			}
+			arg3, err = strconv.Atoi(extra.RemoveEnds(command[3]))
 		}
 		if err != nil {
 			return ""
