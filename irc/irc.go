@@ -4,9 +4,9 @@ import (
 	"bufio"
 	"fmt"
 	"goinstadownload/config"
+	"goinstadownload/extra"
 	"goinstadownload/instagram"
 	"io"
-	"log"
 	"net"
 	"strconv"
 	"strings"
@@ -110,37 +110,42 @@ func StartIRCprocess() {
 
 func ProcessCommand(command []string) string {
 	var bodyString string
+	var UserToFollow string
 	if strings.TrimSpace(command[0]) == "stop" {
 		OutChan <- "stop"
+		bodyString = "Command received... processing"
 	}
 	if strings.TrimSpace(command[0]) == "init" && len(command) >= 3 {
 		var arg3 int
 		arg1 := command[1]
-		arg2, err := strconv.Atoi(strings.TrimSuffix(strings.TrimSuffix(command[2], "\n"), "\r"))
+		arg2, err := strconv.Atoi(extra.RemoveEnds(command[2]))
 		if len(command) >= 4 {
-			arg3, err = strconv.Atoi(strings.TrimSuffix(strings.TrimSuffix(command[3], "\n"), "\r"))
+			if extra.IsInteger(extra.RemoveEnds(command[3])) {
+				arg3, err = strconv.Atoi(extra.RemoveEnds(command[3]))
+			} else {
+				UserToFollow = extra.RemoveEnds(command[3])
+			}
 		}
 		if err != nil {
-			log.Println(err)
 			return ""
 		}
 		instagram.RateLimit = arg2
 		instagram.SleepTime = arg3
-		if arg1 == "-follow" {
-			go ExecuteFollowProcess()
+		if arg1 == "follow" {
+			go ExecuteFollowProcess(UserToFollow)
 		}
-		if arg1 == "-message" {
+		if arg1 == "message" {
 			go ExecuteMessageProcess()
 		}
-
+		bodyString = "Command received... processing"
 	}
-	bodyString = "Command received... processing"
+
 	return bodyString
 }
-func ExecuteFollowProcess() {
+func ExecuteFollowProcess(UserToFollow string) {
 	instagram.FollowCounter = 0
 	instagram.InstaLogin(InChan, OutChan)
-	instagram.InstaShowComments()
+	instagram.InstaShowComments(UserToFollow)
 	defer instagram.InstaLogout()
 }
 

@@ -62,6 +62,7 @@ func ListAllFollowing() map[int]string {
 	return response
 }
 func Uploadlists() {
+
 	blacklistnameraw := config.Localconfig.BlacklistNames
 	for _, bname := range blacklistnameraw {
 		BlacklistNames[bname] = 1
@@ -96,36 +97,38 @@ func InstaDirectMessage(UserId string, Message string) {
 	}
 	fmt.Println(resp)
 }
-func ValidateErrors(err error) {
-	if err.Error() == "The account is logged out" {
-		log.Println(err)
-		log.Println("Handling error: Login called")
-		time.Sleep(5 * time.Second)
-		//InstaLogin()
-	}
-}
-func InstaShowComments() {
+func ValidateErrors(err error, addinfo string) {
+	log.Println(addinfo + " " + err.Error())
+	InChan <- addinfo + " " + err.Error()
 
-	following := ListAllFollowing()
+}
+func InstaShowComments(InUserToFollow string) {
+	following := make(map[int]string)
+	if InUserToFollow != "" {
+		following[1] = InUserToFollow
+	} else {
+		following = ListAllFollowing()
+	}
 
 	for _, UserToFollow := range following {
-		//log.Printf("Checking user: %s ", UserToFollow)
+		log.Printf("Checking user: %s ", UserToFollow)
+		InChan <- "Checking user: " + UserToFollow
 		r, err := Insta.GetUserByUsername(UserToFollow)
 		if err != nil {
-			ValidateErrors(err)
+			ValidateErrors(err, "GetUserByUsername")
 			return
 		}
 
 		resp, err := Insta.LatestUserFeed(r.User.ID)
 		if err != nil {
-			ValidateErrors(err)
+			ValidateErrors(err, "LatestUserFeed")
 			return
 		}
 		for _, item := range resp.Items {
 			time.Sleep(2 * time.Second)
 			resp2, _ := Insta.MediaComments(item.ID, "")
 			if err != nil {
-				ValidateErrors(err)
+				ValidateErrors(err, "MediaComments")
 			}
 			for _, comment := range resp2.Comments {
 
@@ -150,7 +153,7 @@ func InstaShowComments() {
 						return
 					}
 					if err != nil {
-						ValidateErrors(err)
+						ValidateErrors(err, "Follow")
 					}
 				}
 				select {
@@ -186,8 +189,8 @@ func PrepareMessage(Message string, NameOfUser string) string {
 
 }
 func DirectMessage(To string, Name string, Id int64, Pref bool) {
-
-	Message := config.Localconfig.Sentences[Random(0, 10)]
+	max := len(config.Localconfig.Sentences)
+	Message := config.Localconfig.Sentences[Random(0, max)]
 	newMessage := PrepareMessage(Message, Name)
 
 	_, err := Insta.DirectMessage(strconv.FormatInt(Id, 10), newMessage)

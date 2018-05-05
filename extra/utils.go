@@ -1,6 +1,10 @@
 package extra
 
-import "math"
+import (
+	"math"
+	"strconv"
+	"strings"
+)
 
 func hsin(theta float64) float64 {
 	return math.Pow(math.Sin(theta/2), 2)
@@ -21,4 +25,11 @@ func Distance(lat1, lon1, lat2, lon2 float64) float64 {
 	h := hsin(la2-la1) + math.Cos(la1)*math.Cos(la2)*hsin(lo2-lo1)
 
 	return 2 * r * math.Asin(math.Sqrt(h))
+}
+func IsInteger(s string) bool {
+	_, err := strconv.Atoi(s)
+	return err == nil
+}
+func RemoveEnds(input string) string {
+	return strings.Trim(strings.Trim(strings.Trim(input, "\n"), "\r"), "\t")
 }
