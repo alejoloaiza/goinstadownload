@@ -99,6 +99,10 @@ func InstaDirectMessage(UserId string, Message string) {
 func ValidateErrors(err error, addinfo string) {
 	log.Println(addinfo + " " + err.Error())
 	InChan <- addinfo + " " + err.Error()
+	if addinfo == "Login" {
+		_ = Insta.Login()
+		time.Sleep(2 * time.Second)
+	}
 }
 func InstaShowComments(InUserToFollow string) {
 	following := make(map[int]string)
