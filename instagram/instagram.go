@@ -319,6 +319,7 @@ func InstaTimeLineMessages() {
 	if SleepTime == 0 {
 		SleepTime = 10
 	}
+StartProcess:
 	for {
 		myUsers = make([]FollowingUser, 0)
 		inbox, err := Insta.GetV2Inbox("")
@@ -333,11 +334,13 @@ func InstaTimeLineMessages() {
 		}
 		var timeLineCounter int
 		var nextMaxID string
+		timeLineCounter = 0
 		for timeLineCounter < 5 {
 			preferences, err := Insta.Timeline(nextMaxID)
 			if err != nil {
 				ValidateErrors(err, "Timeline")
-				return
+				time.Sleep(1 * time.Minute)
+				continue StartProcess
 			}
 			nextMaxID = preferences.NextMaxID
 			for _, item := range preferences.Items {
@@ -384,7 +387,7 @@ func InstaTimeLineMessages() {
 					return
 				}
 			default:
-				time.Sleep(time.Duration(SleepTime) * 5)
+				time.Sleep(5 * time.Minute)
 			}
 
 		}

@@ -140,7 +140,6 @@ func ProcessCommand(command []string) string {
 			go ExecuteMessageProcess()
 		}
 		if arg1 == "auto" {
-			instagram.RateLimit = 99
 			go ExecuteAutomaticMode()
 
 		}
