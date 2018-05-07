@@ -139,6 +139,11 @@ func ProcessCommand(command []string) string {
 		if arg1 == "message" {
 			go ExecuteMessageProcess()
 		}
+		if arg1 == "auto" {
+			instagram.RateLimit = 99
+			go ExecuteAutomaticMode()
+
+		}
 		bodyString = "Command received... processing"
 	}
 
@@ -157,12 +162,21 @@ func ExecuteMessageProcess() {
 	instagram.InstaRandomMessages()
 	defer instagram.InstaLogout()
 }
+
+func ExecuteAutomaticMode() {
+	instagram.MessageCounter = 0
+	instagram.InstaLogin(InChan, OutChan)
+	instagram.InstaTimeLineMessages()
+	defer instagram.InstaLogout()
+}
 func RoutineWriter(Response net.Conn) {
 	for {
 		select {
 		case msg := <-InChan:
 			if Context != "" {
 				fmt.Fprintln(Response, "PRIVMSG "+Context+" :"+msg)
+			} else {
+				fmt.Fprintln(Response, "PRIVMSG "+config.Localconfig.IRCChannels+" :"+msg)
 			}
 
 		}
