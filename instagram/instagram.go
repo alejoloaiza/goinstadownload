@@ -145,8 +145,13 @@ func InstaShowComments(InUserToFollow string) {
 				if gender == "female" && BlacklistNames[firstname] != 1 && BlacklistUsers[comment.User.Username] != 1 && UserToFollow != comment.User.Username && FollowingList[comment.User.Username] != 1 {
 					time.Sleep(3 * time.Second)
 					tofollow, err := Insta.GetUserByID(comment.User.ID)
+					if err != nil {
+						ValidateErrors(err, "GetUserByID")
+					}
 					jsoninbytes, err := json.Marshal(tofollow)
-					jsonuserprofile := string(jsoninbytes)
+					jsonuserprofile := strings.ToLower(string(jsoninbytes))
+					log.Println(jsonuserprofile)
+				LocationLoop:
 					for _, preflocation := range TownPreference {
 						if strings.Contains(jsonuserprofile, preflocation) {
 							_, err = Insta.Follow(comment.User.ID)
@@ -163,6 +168,7 @@ func InstaShowComments(InUserToFollow string) {
 							if err != nil {
 								ValidateErrors(err, "Follow")
 							}
+							break LocationLoop
 						}
 					}
 				}
