@@ -1,6 +1,7 @@
 package instagram
 
 import (
+	"encoding/json"
 	"fmt"
 	"goinstadownload/config"
 	"log"
@@ -143,19 +144,26 @@ func InstaShowComments(InUserToFollow string) {
 				}
 				if gender == "female" && BlacklistNames[firstname] != 1 && BlacklistUsers[comment.User.Username] != 1 && UserToFollow != comment.User.Username && FollowingList[comment.User.Username] != 1 {
 					time.Sleep(3 * time.Second)
-					_, err = Insta.Follow(comment.User.ID)
-					FollowCounter++
-					log.Printf(">> #%v Following-> Name:%s \t|User:%s \t|Comment:%s \n", FollowCounter, comment.User.FullName, comment.User.Username, comment.Text)
-					InChan <- "Following #" + strconv.Itoa(FollowCounter) + " -> " + comment.User.Username
-					FollowingList[comment.User.Username] = 1
-					if FollowCounter >= RateLimit {
-						//	time.Sleep(12 * time.Hour)
-						log.Printf("End of process, #%v Follow requests sent\n", FollowCounter)
-						InChan <- "End of process " + strconv.Itoa(FollowCounter)
-						return
-					}
-					if err != nil {
-						ValidateErrors(err, "Follow")
+					tofollow, err := Insta.GetUserByID(comment.User.ID)
+					jsoninbytes, err := json.Marshal(tofollow)
+					jsonuserprofile := string(jsoninbytes)
+					for _, preflocation := range TownPreference {
+						if strings.Contains(jsonuserprofile, preflocation) {
+							_, err = Insta.Follow(comment.User.ID)
+							FollowCounter++
+							log.Printf(">> #%v Following-> Name:%s \t|User:%s \t|Comment:%s \n", FollowCounter, comment.User.FullName, comment.User.Username, comment.Text)
+							InChan <- "Following #" + strconv.Itoa(FollowCounter) + " -> " + comment.User.Username
+							FollowingList[comment.User.Username] = 1
+							if FollowCounter >= RateLimit {
+								//	time.Sleep(12 * time.Hour)
+								log.Printf("End of process, #%v Follow requests sent\n", FollowCounter)
+								InChan <- "End of process " + strconv.Itoa(FollowCounter)
+								return
+							}
+							if err != nil {
+								ValidateErrors(err, "Follow")
+							}
+						}
 					}
 				}
 				select {
