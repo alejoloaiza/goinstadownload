@@ -16,6 +16,8 @@ type Configuration struct {
 	IRCChannels    string
 	IRCUser        string
 	IRCServerPort  string
+	LocalLat       float64
+	LocalLng       float64
 }
 
 var Localconfig *Configuration
