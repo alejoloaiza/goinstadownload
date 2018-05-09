@@ -133,22 +133,25 @@ func InstaShowComments(InUserToFollow string) {
 		}
 		for _, item := range resp.Items {
 			time.Sleep(2 * time.Second)
-			resp2, _ := Insta.MediaComments(item.ID, "")
+			//resp2, _ := Insta.MediaComments(item.ID, "")
+			resp2, _ := Insta.MediaLikers(item.ID)
 			if err != nil {
 				ValidateErrors(err, "MediaComments")
 			}
-			for _, comment := range resp2.Comments {
+			for _, comment := range resp2.Users {
+				//for _, comment := range resp2.Comments {
 
-				fullname := strings.Split(comment.User.FullName, " ")
+				fullname := strings.Split(comment.FullName, " ")
 				firstname := strings.ToLower(fullname[0])
 				var gender string
 				//log.Printf("Checking comment of: %s ", comment.User.FullName)
 				if FemaleNames[firstname] == 1 {
 					gender = "female"
 				}
-				if gender == "female" && BlacklistNames[firstname] != 1 && BlacklistUsers[comment.User.Username] != 1 && UserToFollow != comment.User.Username && FollowingList[comment.User.Username] != 1 {
+				//log.Println(firstname)
+				if gender == "female" && BlacklistNames[firstname] != 1 && BlacklistUsers[comment.Username] != 1 && UserToFollow != comment.Username && FollowingList[comment.Username] != 1 {
 					time.Sleep(3 * time.Second)
-					tofollow, err := Insta.GetUserByID(comment.User.ID)
+					tofollow, err := Insta.GetUserByID(comment.ID)
 					if err != nil {
 						ValidateErrors(err, "GetUserByID")
 					}
@@ -158,11 +161,11 @@ func InstaShowComments(InUserToFollow string) {
 				LocationLoop:
 					for _, preflocation := range TownPreference {
 						if strings.Contains(jsonuserprofile, preflocation) {
-							_, err = Insta.Follow(comment.User.ID)
+							_, err = Insta.Follow(comment.ID)
 							FollowCounter++
-							log.Printf(">> #%v Following-> Name:%s \t|User:%s \t|Comment:%s \n", FollowCounter, comment.User.FullName, comment.User.Username, comment.Text)
-							InChan <- "Following #" + strconv.Itoa(FollowCounter) + " -> " + comment.User.Username
-							FollowingList[comment.User.Username] = 1
+							log.Printf(">> #%v Following-> Name:%s \t|User:%s \n", FollowCounter, comment.FullName, comment.Username)
+							InChan <- "Following #" + strconv.Itoa(FollowCounter) + " -> " + comment.Username
+							FollowingList[comment.Username] = 1
 							if FollowCounter >= RateLimit {
 								//	time.Sleep(12 * time.Hour)
 								log.Printf("End of process, #%v Follow requests sent\n", FollowCounter)
@@ -215,12 +218,26 @@ func DirectMessage(To string, Name string, Id int64, Pref bool) {
 	max := len(config.Localconfig.Sentences)
 	Message := config.Localconfig.Sentences[Random(0, max)]
 	newMessage := PrepareMessage(Message, Name)
-
-	_, err := Insta.DirectMessage(strconv.FormatInt(Id, 10), newMessage)
+	resp, err := Insta.DirectMessage(strconv.FormatInt(Id, 10), "Hola")
 	if err != nil {
 		ValidateErrors(err, "DirectMessage")
 		return
 	}
+	time.Sleep(1 * time.Second)
+	resp2, err := Insta.GetDirectThread(resp.Threads[0].ThreadID)
+	if err != nil {
+		ValidateErrors(err, "GetDirectThread")
+		return
+	}
+	time.Sleep(1 * time.Second)
+	if len(resp2.Thread.Items) > 1 {
+		_, err := Insta.DirectMessage(strconv.FormatInt(Id, 10), newMessage)
+		if err != nil {
+			ValidateErrors(err, "DirectMessage")
+			return
+		}
+	}
+
 	MessageCounter++
 	if Pref {
 		log.Printf("Message #%v with PREFERENCE to %s:%s >> %s \n", MessageCounter, Name, To, newMessage)
@@ -245,7 +262,7 @@ func InstaTimeLineMessages(SleepTime int) {
 StartProcess:
 	for {
 		myUsers = make([]FollowingUser, 0)
-		inbox, err := Insta.GetV2Inbox("")
+		/*inbox, err := Insta.GetV2Inbox("")
 		if err != nil {
 			ValidateErrors(err, "GetV2Inbox")
 			return
@@ -255,7 +272,7 @@ StartProcess:
 				myInboxUsers[userthreads.Username] = 1
 			}
 		}
-
+		*/
 		preferences, err := Insta.Timeline("")
 		if err != nil {
 			ValidateErrors(err, "Timeline")
