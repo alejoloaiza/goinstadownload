@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"goinstadownload/config"
+	"goinstadownload/extra"
 	"log"
 	"math/rand"
 	"strconv"
@@ -150,7 +151,7 @@ func InstaShowComments(InUserToFollow string) {
 					}
 					jsoninbytes, err := json.Marshal(tofollow)
 					jsonuserprofile := strings.ToLower(string(jsoninbytes))
-					log.Println(jsonuserprofile)
+					//log.Println(jsonuserprofile)
 				LocationLoop:
 					for _, preflocation := range TownPreference {
 						if strings.Contains(jsonuserprofile, preflocation) {
@@ -346,19 +347,35 @@ StartProcess:
 				myInboxUsers[userthreads.Username] = 1
 			}
 		}
-		var timeLineCounter int
-		var nextMaxID string
-		timeLineCounter = 0
-		for timeLineCounter < 5 {
-			preferences, err := Insta.Timeline(nextMaxID)
-			if err != nil {
-				ValidateErrors(err, "Timeline")
-				time.Sleep(1 * time.Minute)
-				continue StartProcess
+
+		preferences, err := Insta.Timeline("")
+		if err != nil {
+			ValidateErrors(err, "Timeline")
+			time.Sleep(1 * time.Minute)
+			continue StartProcess
+		}
+		for _, item := range preferences.Items {
+			/*
+				jsoninbytes, _ := json.Marshal(item)
+				jsontimeline := strings.ToLower(string(jsoninbytes))
+			*/
+			itemLat := float64(item.Location.Lat)
+			itemLng := float64(item.Location.Lng)
+			distance := extra.Distance(itemLat, itemLng, config.Localconfig.LocalLat, config.Localconfig.LocalLng)
+			if distance < 150000 && myInboxUsers[item.User.Username] != 1 {
+				fullname := strings.Split(item.User.FullName, " ")
+				firstname := strings.ToLower(fullname[0])
+				response.ID = item.User.ID
+				response.Username = item.User.Username
+				response.Fullname = firstname
+				myInboxUsers[item.User.Username] = 1
+				response.Preference = true
+				myUsers = append(myUsers, response)
 			}
-			nextMaxID = preferences.NextMaxID
-			for _, item := range preferences.Items {
+			log.Println(item.Location.City, item.Location.Name, item.Location.Lat, item.Location.Lng, distance)
+			/*
 				timelocation := strings.ToLower(item.Location.City)
+				item.Location.
 				if timelocation == "" {
 					timelocation = strings.ToLower(item.Location.Name)
 				}
@@ -379,9 +396,7 @@ StartProcess:
 
 					}
 				}
-
-			}
-			timeLineCounter++
+			*/
 		}
 
 		for _, dmuser := range myUsers {
@@ -405,7 +420,8 @@ StartProcess:
 			}
 
 		}
+		time.Sleep(time.Duration(SleepTime) * time.Minute)
+
 	}
-	time.Sleep(time.Duration(SleepTime) * time.Minute)
 
 }
