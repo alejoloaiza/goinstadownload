@@ -132,15 +132,14 @@ func ProcessCommand(command []string) string {
 			return ""
 		}
 		instagram.RateLimit = arg2
-		instagram.SleepTime = arg3
 		if arg1 == "follow" {
 			go ExecuteFollowProcess(UserToFollow)
 		}
 		if arg1 == "message" {
-			go ExecuteMessageProcess()
+			go ExecuteMessageProcess(arg3)
 		}
 		if arg1 == "auto" {
-			go ExecuteAutomaticMode()
+			go ExecuteAutomaticMode(arg3)
 
 		}
 		bodyString = "Command received... processing"
@@ -155,17 +154,17 @@ func ExecuteFollowProcess(UserToFollow string) {
 	defer instagram.InstaLogout()
 }
 
-func ExecuteMessageProcess() {
+func ExecuteMessageProcess(SleepTime int) {
 	instagram.MessageCounter = 0
 	instagram.InstaLogin(InChan, OutChan)
-	instagram.InstaRandomMessages()
+	instagram.InstaRandomMessages(SleepTime)
 	defer instagram.InstaLogout()
 }
 
-func ExecuteAutomaticMode() {
+func ExecuteAutomaticMode(SleepTime int) {
 	instagram.MessageCounter = 0
 	instagram.InstaLogin(InChan, OutChan)
-	instagram.InstaTimeLineMessages()
+	instagram.InstaTimeLineMessages(SleepTime)
 	defer instagram.InstaLogout()
 }
 func RoutineWriter(Response net.Conn) {

@@ -25,7 +25,6 @@ var (
 	myUsers        []FollowingUser
 	myInboxUsers   = make(map[string]int)
 	RateLimit      int
-	SleepTime      int
 	FollowCounter  = 0
 	MessageCounter = 0
 	FollowingList  = make(map[string]int)
@@ -41,14 +40,18 @@ var (
 func InstaLogin(in chan string, out chan string) {
 	OutChan = out
 	InChan = in
-	Insta = goinsta.New(config.Localconfig.InstaUser, config.Localconfig.InstaPass)
-	err := Insta.Login()
-	if err != nil {
-		ValidateErrors(err, "Login")
-		return
+	if Insta == nil {
+		Insta = goinsta.New(config.Localconfig.InstaUser, config.Localconfig.InstaPass)
 	}
-	InChan <- "Connected ok to Instagram"
+	if !Insta.InstaType.IsLoggedIn {
+		err := Insta.Login()
 
+		if err != nil {
+			ValidateErrors(err, "Login")
+			return
+		}
+		InChan <- "Connected ok to Instagram"
+	}
 }
 func ListAllFollowing() map[int]string {
 	users, err := Insta.UserFollowing(Insta.InstaType.LoggedInUser.ID, "")
@@ -231,7 +234,87 @@ func Random(min int, max int) int {
 	return rand.Intn(max-min) + min
 }
 
-func InstaRandomMessages() {
+func InstaTimeLineMessages(SleepTime int) {
+
+	rand.Seed(time.Now().UnixNano())
+
+	var response FollowingUser
+	if SleepTime == 0 {
+		SleepTime = 10
+	}
+StartProcess:
+	for {
+		myUsers = make([]FollowingUser, 0)
+		inbox, err := Insta.GetV2Inbox("")
+		if err != nil {
+			ValidateErrors(err, "GetV2Inbox")
+			return
+		}
+		for _, thread := range inbox.Inbox.Threads {
+			for _, userthreads := range thread.Users {
+				myInboxUsers[userthreads.Username] = 1
+			}
+		}
+
+		preferences, err := Insta.Timeline("")
+		if err != nil {
+			ValidateErrors(err, "Timeline")
+			time.Sleep(1 * time.Minute)
+			continue StartProcess
+		}
+		for _, item := range preferences.Items {
+			/*
+				jsoninbytes, _ := json.Marshal(item)
+				jsontimeline := strings.ToLower(string(jsoninbytes))
+			*/
+			if item.Location.Lng != 0 && item.Location.Lat != 0 {
+				itemLat := float64(item.Location.Lat)
+				itemLng := float64(item.Location.Lng)
+				distance := extra.Distance(itemLat, itemLng, config.Localconfig.LocalLat, config.Localconfig.LocalLng)
+				log.Printf("Distance in meter is %v", distance)
+				if distance < config.Localconfig.MinimumDistance && myInboxUsers[item.User.Username] != 1 {
+					fullname := strings.Split(item.User.FullName, " ")
+					firstname := strings.ToLower(fullname[0])
+					response.ID = item.User.ID
+					response.Username = item.User.Username
+					response.Fullname = firstname
+					myInboxUsers[item.User.Username] = 1
+					response.Preference = true
+					myUsers = append(myUsers, response)
+				}
+			}
+
+		}
+
+		for _, dmuser := range myUsers {
+			//fmt.Println(dmuser.Username, dmuser.Fullname, dmuser.ID)
+			DirectMessage(dmuser.Username, dmuser.Fullname, dmuser.ID, dmuser.Preference)
+
+			if MessageCounter >= RateLimit {
+				log.Printf("End of process, #%v Messages sent\n", MessageCounter)
+				InChan <- "End of process"
+				break
+			}
+			select {
+			case msg := <-OutChan:
+				if msg == "stop" {
+					InChan <- "Stopped process on #" + strconv.Itoa(MessageCounter)
+					log.Printf("Stopped, #%v Follow requests sent\n", FollowCounter)
+					return
+				}
+			default:
+			}
+
+		}
+		time.Sleep(time.Duration(SleepTime) * time.Minute)
+
+	}
+
+}
+
+// NOT BEING USED ANYMORE
+
+func InstaRandomMessages(SleepTime int) {
 	rand.Seed(time.Now().UnixNano())
 
 	var response FollowingUser
@@ -321,106 +404,6 @@ func InstaRandomMessages() {
 		default:
 			time.Sleep(time.Duration(SleepTime) * time.Minute)
 		}
-
-	}
-
-}
-
-func InstaTimeLineMessages() {
-
-	rand.Seed(time.Now().UnixNano())
-
-	var response FollowingUser
-	if SleepTime == 0 {
-		SleepTime = 10
-	}
-StartProcess:
-	for {
-		myUsers = make([]FollowingUser, 0)
-		inbox, err := Insta.GetV2Inbox("")
-		if err != nil {
-			ValidateErrors(err, "GetV2Inbox")
-			return
-		}
-		for _, thread := range inbox.Inbox.Threads {
-			for _, userthreads := range thread.Users {
-				myInboxUsers[userthreads.Username] = 1
-			}
-		}
-
-		preferences, err := Insta.Timeline("")
-		if err != nil {
-			ValidateErrors(err, "Timeline")
-			time.Sleep(1 * time.Minute)
-			continue StartProcess
-		}
-		for _, item := range preferences.Items {
-			/*
-				jsoninbytes, _ := json.Marshal(item)
-				jsontimeline := strings.ToLower(string(jsoninbytes))
-			*/
-			itemLat := float64(item.Location.Lat)
-			itemLng := float64(item.Location.Lng)
-			distance := extra.Distance(itemLat, itemLng, config.Localconfig.LocalLat, config.Localconfig.LocalLng)
-			if distance < 150000 && myInboxUsers[item.User.Username] != 1 {
-				fullname := strings.Split(item.User.FullName, " ")
-				firstname := strings.ToLower(fullname[0])
-				response.ID = item.User.ID
-				response.Username = item.User.Username
-				response.Fullname = firstname
-				myInboxUsers[item.User.Username] = 1
-				response.Preference = true
-				myUsers = append(myUsers, response)
-			}
-			log.Println(item.Location.City, item.Location.Name, item.Location.Lat, item.Location.Lng, distance)
-			/*
-				timelocation := strings.ToLower(item.Location.City)
-				item.Location.
-				if timelocation == "" {
-					timelocation = strings.ToLower(item.Location.Name)
-				}
-				if timelocation == "" {
-					continue
-				}
-				for _, preflocation := range TownPreference {
-
-					if strings.Contains(timelocation, preflocation) && myInboxUsers[item.User.Username] != 1 {
-						fullname := strings.Split(item.User.FullName, " ")
-						firstname := strings.ToLower(fullname[0])
-						response.ID = item.User.ID
-						response.Username = item.User.Username
-						response.Fullname = firstname
-						myInboxUsers[item.User.Username] = 1
-						response.Preference = true
-						myUsers = append(myUsers, response)
-
-					}
-				}
-			*/
-		}
-
-		for _, dmuser := range myUsers {
-			//fmt.Println(dmuser.Username, dmuser.Fullname, dmuser.ID)
-			DirectMessage(dmuser.Username, dmuser.Fullname, dmuser.ID, dmuser.Preference)
-
-			if MessageCounter >= RateLimit {
-				log.Printf("End of process, #%v Messages sent\n", MessageCounter)
-				InChan <- "End of process"
-				break
-			}
-			select {
-			case msg := <-OutChan:
-				if msg == "stop" {
-					InChan <- "Stopped process on #" + strconv.Itoa(MessageCounter)
-					log.Printf("Stopped, #%v Follow requests sent\n", FollowCounter)
-					return
-				}
-			default:
-				time.Sleep(5 * time.Minute)
-			}
-
-		}
-		time.Sleep(time.Duration(SleepTime) * time.Minute)
 
 	}
 

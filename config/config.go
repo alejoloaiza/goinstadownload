@@ -5,19 +5,20 @@ import "os"
 import "fmt"
 
 type Configuration struct {
-	InstaUser      string
-	InstaPass      string
-	BlacklistNames []string
-	BlacklistUsers []string
-	FemaleNames    []string
-	Sentences      []string
-	TownPreference []string
-	IRCNick        string
-	IRCChannels    string
-	IRCUser        string
-	IRCServerPort  string
-	LocalLat       float64
-	LocalLng       float64
+	InstaUser       string
+	InstaPass       string
+	BlacklistNames  []string
+	BlacklistUsers  []string
+	FemaleNames     []string
+	Sentences       []string
+	TownPreference  []string
+	IRCNick         string
+	IRCChannels     string
+	IRCUser         string
+	IRCServerPort   string
+	LocalLat        float64
+	LocalLng        float64
+	MinimumDistance float64
 }
 
 var Localconfig *Configuration
