@@ -230,7 +230,7 @@ func DirectMessage(To string, Name string, Id int64, Pref bool) {
 		return
 	}
 	time.Sleep(1 * time.Second)
-	if len(resp2.Thread.Items) > 1 {
+	if len(resp2.Thread.Items) <= 1 {
 		_, err := Insta.DirectMessage(strconv.FormatInt(Id, 10), newMessage)
 		if err != nil {
 			ValidateErrors(err, "DirectMessage")
@@ -312,16 +312,16 @@ StartProcess:
 				InChan <- "End of process"
 				break
 			}
-			select {
-			case msg := <-OutChan:
-				if msg == "stop" {
-					InChan <- "Stopped process on #" + strconv.Itoa(MessageCounter)
-					log.Printf("Stopped, #%v Follow requests sent\n", FollowCounter)
-					return
-				}
-			default:
-			}
 
+		}
+		select {
+		case msg := <-OutChan:
+			if msg == "stop" {
+				InChan <- "Stopped process on #" + strconv.Itoa(MessageCounter)
+				log.Printf("Stopped, #%v Follow requests sent\n", FollowCounter)
+				return
+			}
+		default:
 		}
 		time.Sleep(time.Duration(SleepTime) * time.Minute)
 
