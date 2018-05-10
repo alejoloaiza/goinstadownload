@@ -19,6 +19,7 @@ type Configuration struct {
 	LocalLat        float64
 	LocalLng        float64
 	MinimumDistance float64
+	Proxy           string
 }
 
 var Localconfig *Configuration

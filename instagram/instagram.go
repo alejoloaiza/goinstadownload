@@ -7,11 +7,13 @@ import (
 	"goinstadownload/extra"
 	"log"
 	"math/rand"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/ahmdrz/goinsta"
+	"golang.org/x/net/proxy"
 )
 
 type FollowingUser struct {
@@ -40,8 +42,16 @@ var (
 func InstaLogin(in chan string, out chan string) {
 	OutChan = out
 	InChan = in
+
 	if Insta == nil {
+		dialer, err := proxy.SOCKS5("tcp", config.Localconfig.Proxy, nil, proxy.Direct)
+		if err != nil {
+			log.Fatal(err)
+		}
+		proxyTransport := &http.Transport{}
+		proxyTransport.Dial = dialer.Dial
 		Insta = goinsta.New(config.Localconfig.InstaUser, config.Localconfig.InstaPass)
+		Insta.Transport = *proxyTransport
 	}
 	if !Insta.InstaType.IsLoggedIn {
 		err := Insta.Login()
@@ -136,7 +146,7 @@ func InstaShowComments(InUserToFollow string) {
 			//resp2, _ := Insta.MediaComments(item.ID, "")
 			resp2, _ := Insta.MediaLikers(item.ID)
 			if err != nil {
-				ValidateErrors(err, "MediaComments")
+				ValidateErrors(err, "MediaLikers")
 			}
 			for _, comment := range resp2.Users {
 				//for _, comment := range resp2.Comments {
@@ -157,7 +167,6 @@ func InstaShowComments(InUserToFollow string) {
 					}
 					jsoninbytes, err := json.Marshal(tofollow)
 					jsonuserprofile := strings.ToLower(string(jsoninbytes))
-					//log.Println(jsonuserprofile)
 				LocationLoop:
 					for _, preflocation := range TownPreference {
 						if strings.Contains(jsonuserprofile, preflocation) {
@@ -218,25 +227,31 @@ func DirectMessage(To string, Name string, Id int64, Pref bool) {
 	max := len(config.Localconfig.Sentences)
 	Message := config.Localconfig.Sentences[Random(0, max)]
 	newMessage := PrepareMessage(Message, Name)
-	resp, err := Insta.DirectMessage(strconv.FormatInt(Id, 10), "Hola")
-	if err != nil {
-		ValidateErrors(err, "DirectMessage")
-		return
-	}
-	time.Sleep(1 * time.Second)
-	resp2, err := Insta.GetDirectThread(resp.Threads[0].ThreadID)
-	if err != nil {
-		ValidateErrors(err, "GetDirectThread")
-		return
-	}
-	time.Sleep(1 * time.Second)
-	if len(resp2.Thread.Items) <= 1 {
-		_, err := Insta.DirectMessage(strconv.FormatInt(Id, 10), newMessage)
+	/*
+		resp, err := Insta.DirectMessage(strconv.FormatInt(Id, 10), "Hola")
 		if err != nil {
 			ValidateErrors(err, "DirectMessage")
 			return
 		}
+		time.Sleep(1 * time.Second)
+		resp2, err := Insta.GetDirectThread(resp.Threads[0].ThreadID)
+		if err != nil {
+			ValidateErrors(err, "GetDirectThread")
+			return
+		}
+		time.Sleep(5 * time.Second)
+		fmt.Println(len(resp2.Thread.Items))
+		if len(resp2.Thread.Items) <= 1 {
+	*/
+	resp3, err := Insta.DirectMessage(strconv.FormatInt(Id, 10), newMessage)
+	jsoninbytes, _ := json.Marshal(resp3)
+	jsontimeline := string(jsoninbytes)
+	fmt.Println(jsontimeline)
+	if err != nil {
+		ValidateErrors(err, "DirectMessage")
+		return
 	}
+	//}
 
 	MessageCounter++
 	if Pref {

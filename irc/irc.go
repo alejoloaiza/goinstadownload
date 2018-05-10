@@ -151,21 +151,21 @@ func ExecuteFollowProcess(UserToFollow string) {
 	instagram.FollowCounter = 0
 	instagram.InstaLogin(InChan, OutChan)
 	instagram.InstaShowComments(UserToFollow)
-	defer instagram.InstaLogout()
+	//	defer instagram.InstaLogout()
 }
 
 func ExecuteMessageProcess(SleepTime int) {
 	instagram.MessageCounter = 0
 	instagram.InstaLogin(InChan, OutChan)
 	instagram.InstaRandomMessages(SleepTime)
-	defer instagram.InstaLogout()
+	//	defer instagram.InstaLogout()
 }
 
 func ExecuteAutomaticMode(SleepTime int) {
 	instagram.MessageCounter = 0
 	instagram.InstaLogin(InChan, OutChan)
 	instagram.InstaTimeLineMessages(SleepTime)
-	defer instagram.InstaLogout()
+	//	defer instagram.InstaLogout()
 }
 func RoutineWriter(Response net.Conn) {
 	for {
