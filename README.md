@@ -5,10 +5,9 @@
 Okay this is a program that connects to instagram and does the following thing:
 
 1. Will check all the people you are following already.
-2. Will check all the media of those people and the comments within.
-3. Will check if the comment was made by a female.
-4. Will start following that female.
-5. Thats it, so at the end of the day you will have a real instagram account with a bunch of girls :D
+2. Will check all the media of those people and the likes within.
+3. Will start following them as well.
+4. Thats it, so at the end of the day you be following lot of people.
  
 ## Steps
 
