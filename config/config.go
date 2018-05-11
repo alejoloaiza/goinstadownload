@@ -9,7 +9,7 @@ type Configuration struct {
 	InstaPass       string
 	BlacklistNames  []string
 	BlacklistUsers  []string
-	FemaleNames     []string
+	PreferredNames  []string
 	Sentences       []string
 	TownPreference  []string
 	IRCNick         string

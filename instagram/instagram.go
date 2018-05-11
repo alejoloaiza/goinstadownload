@@ -30,7 +30,7 @@ var (
 	FollowingList  = make(map[string]int)
 	BlacklistNames = make(map[string]int)
 	BlacklistUsers = make(map[string]int)
-	FemaleNames    = make(map[string]int)
+	PreferredNames = make(map[string]int)
 	TownPreference = make(map[int]string)
 	Insta          *goinsta.Instagram
 	InChan         chan string
@@ -85,9 +85,9 @@ func Uploadlists() {
 	for _, bname2 := range blacklistuserraw {
 		BlacklistUsers[bname2] = 1
 	}
-	femalelistraw := config.Localconfig.FemaleNames
+	femalelistraw := config.Localconfig.PreferredNames
 	for _, bname3 := range femalelistraw {
-		FemaleNames[bname3] = 1
+		PreferredNames[bname3] = 1
 	}
 	townpreferenceraw := config.Localconfig.TownPreference
 	for i, bname4 := range townpreferenceraw {
@@ -118,9 +118,7 @@ func ValidateErrors(err error, addinfo string) {
 	}
 }
 func InstaShowComments(InUserToFollow string, Limit int) {
-
 	var FollowCounter int = 0
-
 	following := make(map[int]string)
 	if InUserToFollow != "" {
 		following[1] = InUserToFollow
@@ -154,13 +152,13 @@ func InstaShowComments(InUserToFollow string, Limit int) {
 
 				fullname := strings.Split(comment.FullName, " ")
 				firstname := strings.ToLower(fullname[0])
-				var gender string
+				var preferred bool
 				//log.Printf("Checking comment of: %s ", comment.User.FullName)
-				if FemaleNames[firstname] == 1 {
-					gender = "female"
+				if PreferredNames[firstname] == 1 {
+					preferred = true
 				}
 				//log.Println(firstname)
-				if gender == "female" && BlacklistNames[firstname] != 1 && BlacklistUsers[comment.Username] != 1 && UserToFollow != comment.Username && FollowingList[comment.Username] != 1 {
+				if preferred && BlacklistNames[firstname] != 1 && BlacklistUsers[comment.Username] != 1 && UserToFollow != comment.Username && FollowingList[comment.Username] != 1 {
 					time.Sleep(3 * time.Second)
 					tofollow, err := Insta.GetUserByID(comment.ID)
 					if err != nil {
@@ -216,7 +214,7 @@ func InstaLogout() {
 
 func PrepareMessage(Message string, NameOfUser string) string {
 	resp := ""
-	if FemaleNames[strings.ToLower(NameOfUser)] == 1 {
+	if PreferredNames[strings.ToLower(NameOfUser)] == 1 {
 		resp = strings.Replace(Message, "{name}", strings.ToLower(NameOfUser), 1)
 	} else {
 		resp = strings.Replace(Message, "{name}", "", 1)
