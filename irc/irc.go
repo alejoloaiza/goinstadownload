@@ -115,6 +115,17 @@ func ProcessCommand(command []string) string {
 		OutChan <- "stop"
 		bodyString = "Command received... processing"
 	}
+	if len(command) >= 3 && strings.TrimSpace(command[0]) == "set" {
+		if extra.RemoveEnds(command[1]) == "proxy" {
+			config.Localconfig.UseProxy, _ = strconv.ParseBool(extra.RemoveEnds(command[2]))
+			bodyString = "Proxy set to " + strconv.FormatBool(config.Localconfig.UseProxy)
+		}
+		if extra.RemoveEnds(command[1]) == "logout" {
+			instagram.InstaLogout()
+			bodyString = "Logged out"
+
+		}
+	}
 	if len(command) >= 3 && strings.TrimSpace(command[0]) == "init" {
 		var arg2, arg3 int
 		var err error

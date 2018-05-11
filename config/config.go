@@ -20,6 +20,7 @@ type Configuration struct {
 	LocalLng        float64
 	MinimumDistance float64
 	Proxy           string
+	UseProxy        bool
 }
 
 var Localconfig *Configuration

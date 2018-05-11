@@ -24,7 +24,6 @@ type FollowingUser struct {
 }
 
 var (
-	myUsers      []FollowingUser
 	myInboxUsers = make(map[string]int)
 
 	FollowingList  = make(map[string]int)
@@ -42,14 +41,20 @@ func InstaLogin(in chan string, out chan string) {
 	InChan = in
 
 	if Insta == nil {
-		dialer, err := proxy.SOCKS5("tcp", config.Localconfig.Proxy, nil, proxy.Direct)
-		if err != nil {
-			log.Fatal(err)
+		if config.Localconfig.UseProxy {
+			dialer, err := proxy.SOCKS5("tcp", config.Localconfig.Proxy, nil, proxy.Direct)
+			if err != nil {
+				log.Fatal(err)
+			}
+			proxyTransport := &http.Transport{}
+			proxyTransport.Dial = dialer.Dial
+			Insta = goinsta.New(config.Localconfig.InstaUser, config.Localconfig.InstaPass)
+			Insta.Transport = *proxyTransport
+		} else {
+			Insta = goinsta.New(config.Localconfig.InstaUser, config.Localconfig.InstaPass)
+
 		}
-		proxyTransport := &http.Transport{}
-		proxyTransport.Dial = dialer.Dial
-		Insta = goinsta.New(config.Localconfig.InstaUser, config.Localconfig.InstaPass)
-		Insta.Transport = *proxyTransport
+
 	}
 	if !Insta.InstaType.IsLoggedIn {
 		err := Insta.Login()
@@ -208,8 +213,10 @@ func InstaShowComments(InUserToFollow string, Limit int) {
 }
 
 func InstaLogout() {
-	Insta.Logout()
-
+	if Insta != nil {
+		Insta.Logout()
+		Insta = nil
+	}
 }
 
 func PrepareMessage(Message string, NameOfUser string) string {
@@ -245,7 +252,8 @@ func DirectMessage(To string, Name string, Id int64, Pref bool) bool {
 	resp3, err := Insta.DirectMessage(strconv.FormatInt(Id, 10), newMessage)
 	jsoninbytes, _ := json.Marshal(resp3)
 	jsontimeline := string(jsoninbytes)
-	fmt.Println(jsontimeline)
+	jsontimeline = jsontimeline + ""
+	//fmt.Println(jsontimeline)
 	if err != nil {
 		ValidateErrors(err, "DirectMessage")
 		return false
@@ -262,6 +270,7 @@ func Random(min int, max int) int {
 }
 
 func InstaTimeLineMessages(SleepTime int, Limit int) {
+	var myUsers []FollowingUser
 	var MessageCounter int = 0
 	rand.Seed(time.Now().UnixNano())
 
