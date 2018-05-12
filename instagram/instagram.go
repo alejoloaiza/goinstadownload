@@ -350,3 +350,91 @@ StartProcess:
 	}
 
 }
+
+func InstaStoriesMessages(SleepTime int, Limit int) {
+	var StoryUser []FollowingUser
+	//var myUsers []FollowingUser
+	var MessageCounter int = 0
+	rand.Seed(time.Now().UnixNano())
+
+	//var response FollowingUser
+	if SleepTime == 0 {
+		SleepTime = 10
+	}
+StartProcess:
+	for {
+		log.Println("New cycle started")
+		//myUsers = make([]FollowingUser, 0)
+
+		allstories, err := Insta.GetReelsTrayFeed()
+		if err != nil {
+			ValidateErrors(err, "GetReelsTrayFeed")
+			time.Sleep(1 * time.Minute)
+			continue StartProcess
+		}
+		for _, tray := range allstories.Tray {
+			var newuser = FollowingUser{}
+			newuser.Username = tray.User.Username
+			newuser.Fullname = tray.User.FullName
+			StoryUser = append(StoryUser, newuser)
+		}
+		for _, user := range StoryUser {
+			respuser, _ := Insta.GetUserByUsername(user.Username)
+			user.ID = respuser.User.ID
+			time.Sleep(1 * time.Second)
+			_, _ = Insta.GetUserStories(user.ID)
+
+		}
+		/*
+			jsoninbytes, _ := json.Marshal(item)
+			jsontimeline := strings.ToLower(string(jsoninbytes))
+		*/
+		/*
+				if item.Location.Lng != 0 && item.Location.Lat != 0 {
+					itemLat := float64(item.Location.Lat)
+					itemLng := float64(item.Location.Lng)
+					distance := extra.Distance(itemLat, itemLng, config.Localconfig.LocalLat, config.Localconfig.LocalLng)
+					log.Printf("Distance in meter is %v", distance)
+					if distance < config.Localconfig.MinimumDistance && myInboxUsers[item.User.Username] != 1 {
+						fullname := strings.Split(item.User.FullName, " ")
+						firstname := strings.ToLower(fullname[0])
+						response.ID = item.User.ID
+						response.Username = item.User.Username
+						response.Fullname = firstname
+						myInboxUsers[item.User.Username] = 1
+						response.Preference = true
+						myUsers = append(myUsers, response)
+					}
+				}
+
+			}
+
+			for _, dmuser := range myUsers {
+				//fmt.Println(dmuser.Username, dmuser.Fullname, dmuser.ID)
+				if DirectMessage(dmuser.Username, dmuser.Fullname, dmuser.ID, dmuser.Preference) {
+					MessageCounter++
+				}
+
+				if MessageCounter >= Limit {
+					log.Printf("End of process, #%v Messages sent\n", MessageCounter)
+					InChan <- "End of process"
+					break StartProcess
+				}
+
+			}
+
+		*/
+		select {
+		case msg := <-OutChan:
+			if msg == "stop" {
+				InChan <- "Stopped process on #" + strconv.Itoa(MessageCounter)
+				log.Printf("Stopped, #%v Messages requests sent\n", MessageCounter)
+				return
+			}
+		default:
+		}
+		time.Sleep(time.Duration(SleepTime) * time.Minute)
+
+	}
+
+}
