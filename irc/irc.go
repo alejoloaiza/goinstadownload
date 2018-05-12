@@ -7,6 +7,7 @@ import (
 	"goinstadownload/extra"
 	"goinstadownload/instagram"
 	"io"
+	"log"
 	"net"
 	"strconv"
 	"strings"
@@ -25,13 +26,14 @@ func StartIRCprocess() {
 	//allconfig := config.GetConfig(configpath)
 	InChan = make(chan string)
 	OutChan = make(chan string)
+MainCycle:
 	for {
 		Connection, err := net.Dial("tcp", config.Localconfig.IRCServerPort)
 
 		if err != nil {
 			fmt.Println(err)
 			time.Sleep(2000 * time.Millisecond)
-			continue
+			continue MainCycle
 		}
 
 		fmt.Fprintln(Connection, "NICK "+config.Localconfig.IRCNick)
@@ -39,6 +41,7 @@ func StartIRCprocess() {
 		fmt.Fprintln(Connection, "JOIN "+config.Localconfig.IRCChannels)
 		go RoutineWriter(Connection)
 		MyReader := bufio.NewReader(Connection)
+	ReaderCycle:
 		for {
 
 			message, err := MyReader.ReadString('\n')
@@ -50,7 +53,7 @@ func StartIRCprocess() {
 					fmt.Println("server closed connection")
 				}
 				time.Sleep(2000 * time.Millisecond)
-				break
+				break ReaderCycle
 			}
 
 			fmt.Print(time.Now().Format(time.Stamp) + ">>" + message)
@@ -176,14 +179,18 @@ func ExecuteAutomaticMode(SleepTime int, Limit int) {
 }
 func RoutineWriter(Response net.Conn) {
 	for {
+		var err error
 		select {
 		case msg := <-InChan:
 			if Context != "" {
-				fmt.Fprintln(Response, "PRIVMSG "+Context+" :"+msg)
+				_, err = fmt.Fprintln(Response, "PRIVMSG "+Context+" :"+msg)
 			} else {
-				fmt.Fprintln(Response, "PRIVMSG "+config.Localconfig.IRCChannels+" :"+msg)
+				_, err = fmt.Fprintln(Response, "PRIVMSG "+config.Localconfig.IRCChannels+" :"+msg)
 			}
-
+		}
+		if err != nil {
+			log.Println("Error during Write in RoutineWriter")
+			break
 		}
 	}
 }
